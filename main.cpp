@@ -1,7 +1,11 @@
 #include "main.h"
 
+
+#define MAP_LENGTH 50
+#define BUILDING_NUM 10
 int width = 600;
 int height = 600;
+float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
 float helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
 float lookAtX = helicopterX - 10, lookAtY = helicopterY + 20, lookAtZ = helicopterZ + 20;
 bool keyboardStates[256];
@@ -11,8 +15,13 @@ Model helicopterBackTire;
 Model helicopterBackSupport;
 Model helicopterLeftTire;
 Model helicopterRightTire;
-Model building[2];
+Model building;
 float self_ang = 45.0;
+std::pair<int, int> buildingPos[10];
+
+float bladeRotateSpeed = 0.5f;
+float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 10.0f;
+
 void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -31,7 +40,7 @@ void init(){
     helicopterBody.load("../../model/Helicopter_Body.obj");
     helicopterLeftTire.load("../../model/Helicopter_Left_Tire.obj");
     helicopterRightTire.load("../../model/Helicopter_Right_Tire.obj");
-    // building[0].load("../../model/Building01.obj");
+    building.load("../../model/Building02.obj");
     // building[1].load("../../model/Building02.obj");
 
     if(sphere == NULL){
@@ -49,14 +58,22 @@ void init(){
         gluQuadricDrawStyle(disk, GLU_FILL);
         gluQuadricNormals(disk, GLU_SMOOTH);
     }
+    for(int i = 0; i < BUILDING_NUM; i++){
+
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        buildingPos[i] = std::make_pair(tx, tz);
+
+    }
 }
 
 
 void draw_floor(){
     int i, j;
 
-    for(i = 0; i < 100; i++)
-        for(j = 0; j < 100; j++){
+    for(i = 0; i < MAP_LENGTH; i++)
+        for(j = 0; j < MAP_LENGTH; j++){
             if((i + j) % 2 == 0){
                 glColor3f(1.0, 0.8, 0.8);
             }
@@ -70,14 +87,7 @@ void draw_floor(){
             glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
             glEnd();
 
-            // // Randomly draw a building
-            // if(rand() % 100 == 0){
-            //     int buildingIndex = rand() % 2; // Randomly choose a building from building array
-            //     glPushMatrix();
-            //     glTranslatef((i - 4.5) * 10.0, 0.0, (j - 4.5) * 10.0);
-            //     building[buildingIndex].draw(); // Draw the selected building
-            //     glPopMatrix();
-            // }
+
         }
 }
 
@@ -97,7 +107,21 @@ void reshap(int w, int h){
     glLoadIdentity();
 }
 void draw_building(){
+    for(int i = 0; i < BUILDING_NUM; i++){
+        glColor3f(0.5, 0.5, 0.5);
+        glPushMatrix();
+        int tx = buildingPos[i].first;
+        int tz = buildingPos[i].second;
+        glTranslatef(tx, 0.0, tz);
+        glScaled(0.01, 0.01, 0.01);
+        gluCylinder(cylind, 0.5, 0.5,
+            10.0,
+            12,
+            3);
+        building.draw();
+        glPopMatrix();
 
+    }
 }
 
 void display(){
@@ -106,18 +130,18 @@ void display(){
     glLoadIdentity();
 
 
-    // 设置视图和相机位置
     gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
-    draw_building();
     draw_floor();
     draw_axes();
+    draw_building();
 
-    // glPushMatrix();
     glTranslatef(helicopterX, helicopterY, helicopterZ);
-    // gluCylinder(cylind, 10.0, 10.0, 4.0, 12, 3);
+    // glPushMatrix();
+    glRotatef(helicopterRotateX, 1.0f, 0.0f, 0.0f);
+    glRotatef(helicopterRotateZ, 0.0f, 0.0f, 1.0f);
+    glRotatef(helicopterRotateY, 0.0f, 1.0f, 0.0f);
 
-    // glPopMatrix();
     glPushMatrix();
     glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
     glScalef(10.0f, 10.0f, 10.0f);
@@ -166,44 +190,80 @@ void display(){
         glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // 旋转到下一个 Blade 位置
     }
     glPopMatrix();
+    // glPopMatrix();
 
     glutSwapBuffers();
 }
 
 void update(){
-    self_ang += 0.5;
+    self_ang += bladeRotateSpeed;
     if(self_ang >= 360.0)
         self_ang -= 360.0;
     if(keyboardStates['w']){
-        std::cout << "w" << std::endl;
+        if(helicopterRotateX > -45.0){
+            helicopterRotateX -= 0.1;
+        }
+
         helicopterZ -= 0.1;
         lookAtZ -= 0.1;
     }
     if(keyboardStates['s']){
-        std::cout << "s" << std::endl;
+        if(helicopterRotateX < 45.0){
+            helicopterRotateX += 0.1;
+        }
         helicopterZ += 0.1;
         lookAtZ += 0.1;
     }
     if(keyboardStates['a']){
-        std::cout << "a" << std::endl;
+        if(helicopterRotateZ < 45.0){
+            helicopterRotateZ += 0.1;
+        }
         helicopterX -= 0.1;
         lookAtX -= 0.1;
     }
     if(keyboardStates['d']){
-        std::cout << "d" << std::endl;
+
+        if(helicopterRotateZ > -45.0){
+            helicopterRotateZ -= 0.1;
+        }
         helicopterX += 0.1;
         lookAtX += 0.1;
     }
     if(directionKey[0]){
-        std::cout << "up" << std::endl;
+        bladeRotateSpeed = 1.0f;
         helicopterY += 0.1;
         lookAtY += 0.1;
     }
     if(directionKey[1]){
-        std::cout << "down" << std::endl;
+        bladeRotateSpeed = 0.3f;
         helicopterY -= 0.1;
         lookAtY -= 0.1;
     }
+    if(directionKey[2]){
+        helicopterRotateY += 0.1;
+    }
+    if(directionKey[3]){
+        helicopterRotateY -= 0.1;
+    }
+    if(!directionKey[0] && !directionKey[1] && !keyboardStates['w'] && !keyboardStates['s'] && !keyboardStates['a'] && !keyboardStates['d']){
+        if(helicopterRotateX > 0.0){
+            helicopterRotateX -= 0.1;
+        }
+        else if(helicopterRotateX < 0.0){
+            helicopterRotateX += 0.1;
+        }
+
+        if(helicopterRotateZ > 0.0){
+            helicopterRotateZ -= 0.1;
+        }
+        else if(helicopterRotateZ < 0.0){
+            helicopterRotateZ += 0.1;
+        }
+        // helicopterRotateX = 0.0;
+        // helicopterRotateZ = 0.0;
+        bladeRotateSpeed = 0.5f;
+    }
+    // std::cout << "X: " << helicopterX << " Y: " << helicopterY << " Z: " << helicopterZ << std::endl;
     display();
 }
 

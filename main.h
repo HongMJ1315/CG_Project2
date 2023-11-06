@@ -97,5 +97,8 @@ void draw_axes(){
     glPopMatrix();
 }
 
+float csc(float x){
+    return 1.0/sin(x);
+}
 
 #endif
