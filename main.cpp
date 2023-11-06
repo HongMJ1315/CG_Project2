@@ -21,11 +21,11 @@ void init(){
     // gluPerspective(20.0, 1.0, 1.0, 2000.0);
     glEnable(GL_DEPTH_TEST);
 
-    helicopterBackSupport.load("Helicopter_Back_Support.obj");
-    helicopterBackTire.load("Helicopter_Back_Tire.obj");
-    helicopterBody.load("Helicopter_Body.obj");
-    helicopterLeftTire.load("Helicopter_Left_Tire.obj");
-    helicopterRightTire.load("Helicopter_Right_Tire.obj");
+    helicopterBackSupport.load("../../Model/Helicopter_Back_Support.obj");
+    helicopterBackTire.load("../../Model/Helicopter_Back_Tire.obj");
+    helicopterBody.load("../../Model/Helicopter_Body.obj");
+    helicopterLeftTire.load("../../Model/Helicopter_Left_Tire.obj");
+    helicopterRightTire.load("../../Model/Helicopter_Right_Tire.obj");
 
 }
 
