@@ -52,24 +52,7 @@ void Blade(){
 }
 
 
-/*---------------------------------------------------------
- * Procedure to draw the floor.
- */
-void draw_floor(){
-    int  i, j;
 
-    for(i = 0; i < 100; i++)
-        for(j = 0; j < 100; j++){
-            if((i + j) % 2 == 0) glColor3f(1.0, 0.8, 0.8);
-            else glColor3f(0.1, 0.1, 0.7);
-            glBegin(GL_POLYGON);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
-            glEnd();
-        }
-}
 
 /*-------------------------------------------------------
  * Procedure to draw three axes and the orign

@@ -11,7 +11,7 @@ Model helicopterBackTire;
 Model helicopterBackSupport;
 Model helicopterLeftTire;
 Model helicopterRightTire;
-
+Model building[2];
 float self_ang = 45.0;
 void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -31,7 +31,8 @@ void init(){
     helicopterBody.load("../../model/Helicopter_Body.obj");
     helicopterLeftTire.load("../../model/Helicopter_Left_Tire.obj");
     helicopterRightTire.load("../../model/Helicopter_Right_Tire.obj");
-
+    // building[0].load("../../model/Building01.obj");
+    // building[1].load("../../model/Building02.obj");
 
     if(sphere == NULL){
         sphere = gluNewQuadric();
@@ -50,6 +51,36 @@ void init(){
     }
 }
 
+
+void draw_floor(){
+    int i, j;
+
+    for(i = 0; i < 100; i++)
+        for(j = 0; j < 100; j++){
+            if((i + j) % 2 == 0){
+                glColor3f(1.0, 0.8, 0.8);
+            }
+            else{
+                glColor3f(0.1, 0.1, 0.7);
+            }
+            glBegin(GL_POLYGON);
+            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glEnd();
+
+            // // Randomly draw a building
+            // if(rand() % 100 == 0){
+            //     int buildingIndex = rand() % 2; // Randomly choose a building from building array
+            //     glPushMatrix();
+            //     glTranslatef((i - 4.5) * 10.0, 0.0, (j - 4.5) * 10.0);
+            //     building[buildingIndex].draw(); // Draw the selected building
+            //     glPopMatrix();
+            // }
+        }
+}
+
 void reshap(int w, int h){
     width = w;
     height = h;
@@ -65,7 +96,9 @@ void reshap(int w, int h){
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
+void draw_building(){
 
+}
 
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -76,6 +109,7 @@ void display(){
     // 设置视图和相机位置
     gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
+    draw_building();
     draw_floor();
     draw_axes();
 
