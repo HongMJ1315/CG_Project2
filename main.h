@@ -17,6 +17,9 @@
 #define WIDTH 600
 #define HEIGHT 600
 
+
+GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
+
 float  points[][3] = { {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5},
                       {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5},
                       {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5},
@@ -36,6 +39,79 @@ void Cube(){
         }
         glEnd();
     }
+}
+
+void Blade(){
+    glBegin(GL_POLYGON);
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(1.0, 4.0, 0.0);
+    glVertex3f(1.0, 8.0, 0.0);
+    glVertex3f(-1.0, 8.0, 0.0);
+    glVertex3f(-1.0, 4.0, 0.0);
+    glEnd();
+}
+
+
+/*---------------------------------------------------------
+ * Procedure to draw the floor.
+ */
+void draw_floor(){
+    int  i, j;
+
+    for(i = 0; i < 100; i++)
+        for(j = 0; j < 100; j++){
+            if((i + j) % 2 == 0) glColor3f(1.0, 0.8, 0.8);
+            else glColor3f(0.1, 0.1, 0.7);
+            glBegin(GL_POLYGON);
+            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glEnd();
+        }
+}
+
+/*-------------------------------------------------------
+ * Procedure to draw three axes and the orign
+ */
+void draw_axes(){
+
+    /*----Draw a white sphere to represent the original-----*/
+    glColor3f(0.9, 0.9, 0.9);
+
+    gluSphere(sphere, 2.0,   /* radius=2.0 */
+        12,            /* composing of 12 slices*/
+        12);           /* composing of 8 stacks */
+
+    /*----Draw three axes in colors, yellow, meginta, and cyan--*/
+    /* Draw Z axis  */
+    glColor3f(0.0, 0.95, 0.95);
+    gluCylinder(cylind, 0.5, 0.5, /* radius of top and bottom circle */
+        10.0,              /* height of the cylinder */
+        12,               /* use 12-side polygon approximating circle*/
+        3);               /* Divide it into 3 sections */
+
+    /* Draw Y axis */
+    glPushMatrix();
+    glRotatef(-90.0, 1.0, 0.0, 0.0);  /*Rotate about x by -90', z becomes y */
+    glColor3f(0.95, 0.0, 0.95);
+    gluCylinder(cylind, 0.5, 0.5, /* radius of top and bottom circle */
+        10.0,             /* height of the cylinder */
+        12,               /* use 12-side polygon approximating circle*/
+        3);               /* Divide it into 3 sections */
+    glPopMatrix();
+
+    /* Draw X axis */
+    glColor3f(0.95, 0.95, 0.0);
+    glPushMatrix();
+    glRotatef(90.0, 0.0, 1.0, 0.0);  /*Rotate about y  by 90', x becomes z */
+    gluCylinder(cylind, 0.5, 0.5,   /* radius of top and bottom circle */
+        10.0,             /* height of the cylinder */
+        12,               /* use 12-side polygon approximating circle*/
+        3);               /* Divide it into 3 sections */
+    glPopMatrix();
+    /*-- Restore the original modelview matrix --*/
+    glPopMatrix();
 }
 
 
