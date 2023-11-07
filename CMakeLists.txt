@@ -59,7 +59,8 @@ set(Codes
 
     # "wind_mill"
     "main"
-    "main2"
+    # "main2"
+    # "tree"
 )
 
 foreach(ex IN LISTS Codes)

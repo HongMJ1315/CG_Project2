@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include "load_model.h"
+#include "tree.h"
 
 #include <math.h>
 #include <time.h>
@@ -20,21 +21,21 @@
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
 
-float  points[][3] = { {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5},
-                      {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5},
-                      {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5},
-                      {0.5, 0.5, 0.5}, {-0.5, 0.5, 0.5} };
+float  points[][3] = { {0, 0, 0}, {1, 0, 0},
+                      {1, 1, 0}, {0, 1, 0},
+                      {0, 0, 1}, {1, 0, 1},
+                      {1, 1, 1}, {0, 1, 1} };
 /* face of box, each face composing of 4 vertices */
 int    face[][4] = { {0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5},
                     {4, 5, 6, 7}, {2, 3, 7, 6}, {0, 4, 7, 3} };
 float  colors[6][3] = { {0.5,0.5,0.5}, {0.7,0.7,0.7}, {0.7,0.5,0.5},
                      {0.5,0.5,0.5}, {0.5,0.7,0.5}, {0.5,0.5,0.7} };
 
-void Cube(){
+void Cube(float r, float g, float b){
     for(int i = 0; i < 6; i++){
         glBegin(GL_POLYGON);
         for(int j = 0; j < 4; j++){
-            glColor3fv(colors[i]);
+            glColor3f(r, g, b);
             glVertex3fv(points[face[i][j]]);
         }
         glEnd();
@@ -98,7 +99,16 @@ void draw_axes(){
 }
 
 float csc(float x){
-    return 1.0/sin(x);
+    return 1.0 / sin(x);
 }
 
+void Tire(float r, float g, float b){
+    glPushMatrix();
+    glColor3f(r, g, b);
+    glutSolidTorus(2.0,  /* inner radius */
+        2.0,  /* outer radius */
+        24,   /* divided into 18 segments */
+        12);  /* 12 rings */
+    glPopMatrix();
+}
 #endif
