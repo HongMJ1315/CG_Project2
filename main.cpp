@@ -6,7 +6,8 @@
 #define TREE_NUM 1
 #define MAGANIFICATION 2.0f
 #define ESP ((float)1e-7)
-
+#define MOVE_SPEED 0.25f
+#define BLADE_SPEED 0.75f
 int width = 600;
 int height = 600;
 float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
@@ -323,23 +324,23 @@ void update(){
             helicopterRotateX += 0.1;
         }
 
-        helicopterZ -= 0.1;
-        lookAtZ -= 0.1;
+        helicopterZ -= MOVE_SPEED;
+        lookAtZ -= MOVE_SPEED;
     }
     if(keyboardStates['s']){
         if(helicopterRotateX > -45.0 && helicopterY > ESP){
             helicopterRotateX -= 0.1;
         }
-        helicopterZ += 0.1;
-        lookAtZ += 0.1;
+        helicopterZ += MOVE_SPEED;
+        lookAtZ += MOVE_SPEED;
     }
     if(keyboardStates['a']){
         if(helicopterY > ESP){
             if(helicopterRotateZ > -45.0){
                 helicopterRotateZ -= 0.1;
             }
-            helicopterX -= 0.1;
-            lookAtX -= 0.1;
+            helicopterX -= MOVE_SPEED;
+            lookAtX -= MOVE_SPEED;
         }
     }
     if(keyboardStates['d']){
@@ -347,23 +348,23 @@ void update(){
             if(helicopterRotateZ < 45.0){
                 helicopterRotateZ += 0.1;
             }
-            helicopterX += 0.1;
-            lookAtX += 0.1;
+            helicopterX += MOVE_SPEED;
+            lookAtX += MOVE_SPEED;
         }
     }
     if(directionKey[0]){
-        bladeRotateSpeed = 1.0f;
-        helicopterY += 0.1;
-        lookAtY += 0.1;
+        bladeRotateSpeed = BLADE_SPEED * 2;
+        helicopterY += MOVE_SPEED;
+        lookAtY += MOVE_SPEED;
     }
     if(directionKey[1]){
         if(helicopterY > ESP){
-            bladeRotateSpeed = 0.3f;
-            helicopterY -= 0.1;
-            lookAtY -= 0.1;
+            bladeRotateSpeed = BLADE_SPEED * 0.5;
+            helicopterY -= MOVE_SPEED;
+            lookAtY -= MOVE_SPEED;
         }
         else{
-            bladeRotateSpeed = 0.5f;
+            bladeRotateSpeed = BLADE_SPEED;
         }
     }
     if(directionKey[2]){
@@ -444,7 +445,7 @@ int main(int argc, char **argv){
     int POS_Y = (glutGet(GLUT_SCREEN_HEIGHT) - height) >> 1;
     glutInitWindowPosition(POS_X, POS_Y);
     glutInitWindowSize(width, height);
-    glutCreateWindow("Load Model");
+    glutCreateWindow("Helicopter");
     init();
     glutIdleFunc(update);
     glutKeyboardFunc(keyboardDown);
