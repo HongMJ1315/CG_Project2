@@ -2,12 +2,13 @@
 
 
 #define MAP_LENGTH 50
-#define BUILDING_NUM 10
-#define TREE_NUM 1
+#define BUILDING_NUM 20
+#define TREE_NUM 3
 #define MAGANIFICATION 2.0f
 #define ESP ((float)1e-7)
-#define MOVE_SPEED 0.25f
-#define BLADE_SPEED 0.75f
+#define MOVE_SPEED 0.75f
+#define ROTATE_SPEED 1.5f
+#define BLADE_SPEED 5.0f
 int width = 600;
 int height = 600;
 float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
@@ -22,32 +23,33 @@ Model helicopterLeftTire;
 Model helicopterRightTire;
 Model building;
 float self_ang = 45.0;
-std::pair<int, int> buildingPos[10];
-std::pair<int, int> treePos[5];
-branch tree[5];
+std::pair<int, int> buildingPos[BUILDING_NUM];
+float buildingRotate[BUILDING_NUM];
+std::pair<int, int> treePos[TREE_NUM];
+float treeRotate[TREE_NUM];
+branch tree[TREE_NUM];
 
 float bladeRotateSpeed = 0.5f;
 float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 10.0f;
 
 const float sq2 = sqrt(2.0) / 2.0;
+int viewPoint = 3;
 void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    // 启用深度测试
     glEnable(GL_DEPTH_TEST);
-    glClearDepth(1.0); // 设置深度缓冲的清除值为1.0
+    glClearDepth(1.0);
     // glEnable(GL_LIGHT0);
     // glEnable(GL_LIGHTING);
 
 
-    // 加载模型
-    helicopterBackSupport.load("../../model/Helicopter_Back_Support.obj");
-    helicopterBackTire.load("../../model/Helicopter_Back_Tire.obj");
-    helicopterBody.load("../../model/Helicopter_Body.obj");
-    helicopterLeftTire.load("../../model/Helicopter_Left_Tire.obj");
-    helicopterRightTire.load("../../model/Helicopter_Right_Tire.obj");
+    // helicopterBackSupport.load("../../model/Helicopter_Back_Support.obj");
+    // helicopterBackTire.load("../../model/Helicopter_Back_Tire.obj");
+    // helicopterBody.load("../../model/Helicopter_Body.obj");
+    // helicopterLeftTire.load("../../model/Helicopter_Left_Tire.obj");
+    // helicopterRightTire.load("../../model/Helicopter_Right_Tire.obj");
     building.load("../../model/Building02.obj");
     // building[1].load("../../model/Building02.obj");
 
@@ -72,13 +74,14 @@ void init(){
         int tz = rand() % (int) mapHeight;
         std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
         buildingPos[i] = std::make_pair(tx, tz);
-
+        buildingRotate[i] = (float) (rand() % 360);
     }
     for(int i = 0; i < TREE_NUM; i++){
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
-        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
-        treePos[i] = std::make_pair(15, 15);
+        std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        treePos[i] = std::make_pair(tx, tz);
+        treeRotate[i] = (float) (rand() % 360);
         tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
         tree[i].grow(200);
         tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
@@ -135,6 +138,7 @@ void draw_building(){
         int tx = buildingPos[i].first;
         int tz = buildingPos[i].second;
         glTranslatef(tx, 0.0, tz);
+        glRotatef(buildingRotate[i], 0.0f, 1.0f, 0.0f);
         glScaled(0.01, 0.01, 0.01);
         // gluCylinder(cylind, 0.5, 0.5,
         //     10.0,
@@ -152,8 +156,10 @@ void draw_tree(){
         glPushMatrix();
         int tx = treePos[i].first;
         int tz = treePos[i].second;
-        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
         glTranslatef(tx, 0.0, tz);
+        glRotatef(treeRotate[i], 0.0f, 1.0f, 0.0f);
+        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+
         glScaled(10, 10, 10);
         tree[i].draw();
         glPopMatrix();
@@ -166,20 +172,25 @@ void display(){
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-
-    gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-
+    if(viewPoint == 3)
+        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else if(viewPoint == 2)
+        gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else if(viewPoint == 1)
+        gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else
+        gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     draw_floor();
     draw_axes();
     draw_tree();
     draw_building();
 
     glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
+    glRotatef(-helicopterRotateY, 0.0f, 1.0f, 0.0f);
+    glRotatef(-helicopterRotateX, 1.0f, 0.0f, 0.0f);
+    glRotatef(-helicopterRotateZ, 0.0f, 0.0f, 1.0f);
     glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
     // glPushMatrix();
-    glRotatef(helicopterRotateX, 1.0f, 0.0f, 0.0f);
-    glRotatef(helicopterRotateZ, 0.0f, 0.0f, 1.0f);
-    glRotatef(helicopterRotateY, 0.0f, 1.0f, 0.0f);
 
     // glScalef(10.0f, 10.0f, 10.0f);
 
@@ -250,7 +261,7 @@ void display(){
 
     //Tier support left
     glPushMatrix();
-    glTranslatef(-7, -1, 3.5);
+    glTranslatef(-8, -1, 3.5);
     glRotatef(-45.0f, 0.0f, 0.0f, 1.0f);
     glScalef(1, 3, 1);
     Cube(133.0 / 255.0, 193.0 / 255.0, 233.0 / 255.0);
@@ -294,7 +305,7 @@ void display(){
         Blade();
 
         glPopMatrix();
-        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);  // 旋转到下一个 Blade 位置
+        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
     }
     glPopMatrix();
     glPushMatrix();
@@ -308,7 +319,7 @@ void display(){
         Blade();
 
         glPopMatrix();
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // 旋转到下一个 Blade 位置
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
     }
     glPopMatrix();
 
@@ -316,40 +327,50 @@ void display(){
 }
 
 void update(){
-    self_ang += bladeRotateSpeed;
+    if(helicopterY > ESP)
+        self_ang += bladeRotateSpeed;
+    std::cout << helicopterY << std::endl;
     if(self_ang >= 360.0)
         self_ang -= 360.0;
     if(keyboardStates['w']){
         if(helicopterRotateX < 45.0 && helicopterY > ESP){
-            helicopterRotateX += 0.1;
+            helicopterRotateX += ROTATE_SPEED * 0.2;
         }
 
-        helicopterZ -= MOVE_SPEED;
-        lookAtZ -= MOVE_SPEED;
+        helicopterZ -= MOVE_SPEED * cos(helicopterRotateY * PI / 180.0);
+        lookAtZ -= MOVE_SPEED * cos(helicopterRotateY * PI / 180.0);
+        helicopterX += MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
+        lookAtX += MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
     }
     if(keyboardStates['s']){
         if(helicopterRotateX > -45.0 && helicopterY > ESP){
-            helicopterRotateX -= 0.1;
+            helicopterRotateX -= ROTATE_SPEED * 0.2;
         }
-        helicopterZ += MOVE_SPEED;
-        lookAtZ += MOVE_SPEED;
+        helicopterZ += MOVE_SPEED * cos(helicopterRotateY * PI / 180.0);
+        lookAtZ += MOVE_SPEED * cos(helicopterRotateY * PI / 180.0);
+        helicopterX -= MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
+        lookAtX -= MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
     }
     if(keyboardStates['a']){
         if(helicopterY > ESP){
             if(helicopterRotateZ > -45.0){
-                helicopterRotateZ -= 0.1;
+                helicopterRotateZ -= ROTATE_SPEED * 0.2;
             }
-            helicopterX -= MOVE_SPEED;
-            lookAtX -= MOVE_SPEED;
+            helicopterX -= MOVE_SPEED * sin((helicopterRotateY + 90) * PI / 180.0);
+            lookAtX -= MOVE_SPEED * sin((helicopterRotateY + 90) * PI / 180.0);
+            helicopterZ += MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
+            lookAtZ += MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
         }
     }
     if(keyboardStates['d']){
         if(helicopterY > ESP){
             if(helicopterRotateZ < 45.0){
-                helicopterRotateZ += 0.1;
+                helicopterRotateZ += ROTATE_SPEED * 0.2;
             }
-            helicopterX += MOVE_SPEED;
-            lookAtX += MOVE_SPEED;
+            helicopterX += MOVE_SPEED * sin((helicopterRotateY + 90) * PI / 180.0);
+            lookAtX += MOVE_SPEED * sin((helicopterRotateY + 90) * PI / 180.0);
+            helicopterZ -= MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
+            lookAtZ -= MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
         }
     }
     if(directionKey[0]){
@@ -368,34 +389,59 @@ void update(){
         }
     }
     if(directionKey[2]){
-        helicopterRotateY += 0.1;
+        helicopterRotateY += ROTATE_SPEED * 0.5;
     }
     if(directionKey[3]){
-        helicopterRotateY -= 0.1;
+        helicopterRotateY -= ROTATE_SPEED * 0.5;
     }
     if(!directionKey[0] && !directionKey[1] && !keyboardStates['w'] && !keyboardStates['s'] && !keyboardStates['a'] && !keyboardStates['d']){
-        if(helicopterRotateX > ESP){
-            helicopterRotateX -= 0.5;
+        if(helicopterRotateX - ROTATE_SPEED > ESP){
+            helicopterRotateX -= ROTATE_SPEED;
         }
-        else if(helicopterRotateX < ESP){
-            helicopterRotateX += 0.5;
+        else if(helicopterRotateX + ROTATE_SPEED < ESP){
+            helicopterRotateX += ROTATE_SPEED;
         }
 
-        if(helicopterRotateZ > ESP){
-            helicopterRotateZ -= 0.5;
+        if(helicopterRotateZ - ROTATE_SPEED > ESP){
+            helicopterRotateZ -= ROTATE_SPEED;
         }
-        else if(helicopterRotateZ < ESP){
-            helicopterRotateZ += 0.5;
+        else if(helicopterRotateZ + ROTATE_SPEED < ESP){
+            helicopterRotateZ += ROTATE_SPEED;
         }
         // helicopterRotateX = 0.0;
         // helicopterRotateZ = 0.0;
-        bladeRotateSpeed = 0.5f;
+        bladeRotateSpeed = BLADE_SPEED;
     }
+    if(keyboardStates['r']){
+        if(keyboardStates['l']){
+            keyboardStates['d'] = directionKey[3] = 1;
+        }
+        else{
+            keyboardStates['d'] = directionKey[3] = 0;
+        }
+        if(keyboardStates['k']){
+            keyboardStates['a'] = directionKey[2] = 1;
+        }
+        else{
+            keyboardStates['a'] = directionKey[2] = 0;
+        }
+    }
+
     display();
 }
 
 void keyboardDown(unsigned char key, int x, int y){
     keyboardStates[key] = true;
+    switch(key){
+        case 'v':
+        viewPoint = (viewPoint + 1) % 4;
+        break;
+
+        default:
+        break;
+    }
+    // std::cout << "viewPoint: " << viewPoint << std::endl;
+
 }
 
 void keyboardUp(unsigned char key, int x, int y){
