@@ -72,14 +72,14 @@ void init(){
 
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
-        std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
         buildingPos[i] = std::make_pair(tx, tz);
         buildingRotate[i] = (float) (rand() % 360);
     }
     for(int i = 0; i < TREE_NUM; i++){
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
-        std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
         treePos[i] = std::make_pair(tx, tz);
         treeRotate[i] = (float) (rand() % 360);
         tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
@@ -329,7 +329,7 @@ void display(){
 void update(){
     if(helicopterY > ESP)
         self_ang += bladeRotateSpeed;
-    std::cout << helicopterY << std::endl;
+    // std::cout << helicopterY << std::endl;
     if(self_ang >= 360.0)
         self_ang -= 360.0;
     if(keyboardStates['w']){
@@ -342,6 +342,11 @@ void update(){
         helicopterX += MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
         lookAtX += MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
     }
+    else{
+        if(helicopterRotateX - ROTATE_SPEED > ESP){
+            helicopterRotateX -= ROTATE_SPEED;
+        }
+    }
     if(keyboardStates['s']){
         if(helicopterRotateX > -45.0 && helicopterY > ESP){
             helicopterRotateX -= ROTATE_SPEED * 0.2;
@@ -350,6 +355,11 @@ void update(){
         lookAtZ += MOVE_SPEED * cos(helicopterRotateY * PI / 180.0);
         helicopterX -= MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
         lookAtX -= MOVE_SPEED * sin(helicopterRotateY * PI / 180.0);
+    }
+    else{
+        if(helicopterRotateX + ROTATE_SPEED < ESP){
+            helicopterRotateX += ROTATE_SPEED;
+        }
     }
     if(keyboardStates['a']){
         if(helicopterY > ESP){
@@ -362,6 +372,11 @@ void update(){
             lookAtZ += MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
         }
     }
+    else{
+        if(helicopterRotateZ + ROTATE_SPEED < ESP){
+            helicopterRotateZ += ROTATE_SPEED;
+        }
+    }
     if(keyboardStates['d']){
         if(helicopterY > ESP){
             if(helicopterRotateZ < 45.0){
@@ -371,6 +386,12 @@ void update(){
             lookAtX += MOVE_SPEED * sin((helicopterRotateY + 90) * PI / 180.0);
             helicopterZ -= MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
             lookAtZ -= MOVE_SPEED * cos((helicopterRotateY + 90) * PI / 180.0);
+        }
+    }
+    else{
+
+        if(helicopterRotateZ - ROTATE_SPEED > ESP){
+            helicopterRotateZ -= ROTATE_SPEED;
         }
     }
     if(directionKey[0]){
@@ -395,21 +416,6 @@ void update(){
         helicopterRotateY -= ROTATE_SPEED * 0.5;
     }
     if(!directionKey[0] && !directionKey[1] && !keyboardStates['w'] && !keyboardStates['s'] && !keyboardStates['a'] && !keyboardStates['d']){
-        if(helicopterRotateX - ROTATE_SPEED > ESP){
-            helicopterRotateX -= ROTATE_SPEED;
-        }
-        else if(helicopterRotateX + ROTATE_SPEED < ESP){
-            helicopterRotateX += ROTATE_SPEED;
-        }
-
-        if(helicopterRotateZ - ROTATE_SPEED > ESP){
-            helicopterRotateZ -= ROTATE_SPEED;
-        }
-        else if(helicopterRotateZ + ROTATE_SPEED < ESP){
-            helicopterRotateZ += ROTATE_SPEED;
-        }
-        // helicopterRotateX = 0.0;
-        // helicopterRotateZ = 0.0;
         bladeRotateSpeed = BLADE_SPEED;
     }
     if(keyboardStates['r']){
