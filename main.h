@@ -53,8 +53,6 @@ void Blade(){
 }
 
 
-
-
 /*-------------------------------------------------------
  * Procedure to draw three axes and the orign
  */

@@ -28,12 +28,14 @@ float buildingRotate[BUILDING_NUM];
 std::pair<int, int> treePos[TREE_NUM];
 float treeRotate[TREE_NUM];
 branch tree[TREE_NUM];
+float   u[3][3] = { {1.0,0.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0} };
 
 float bladeRotateSpeed = 0.5f;
 float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 10.0f;
 
 const float sq2 = sqrt(2.0) / 2.0;
 int viewPoint = 3;
+int viewMode = 0;
 void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -167,24 +169,8 @@ void draw_tree(){
     }
 }
 
-void display(){
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    if(viewPoint == 3)
-        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    else if(viewPoint == 2)
-        gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    else if(viewPoint == 1)
-        gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    else
-        gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    draw_floor();
-    draw_axes();
-    draw_tree();
-    draw_building();
-
+void draw_helicopter(){
+    glPushMatrix();
     glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
     glRotatef(-helicopterRotateY, 0.0f, 1.0f, 0.0f);
     glRotatef(-helicopterRotateX, 1.0f, 0.0f, 0.0f);
@@ -323,8 +309,149 @@ void display(){
     }
     glPopMatrix();
 
+    glPopMatrix();
+}
+
+void draw_view(){
+    int    i;
+
+    glMatrixMode(GL_MODELVIEW);
+
+    /*----Draw Eye position-----*/
+    glPushMatrix();
+    glTranslatef(lookAtX, lookAtY, lookAtZ);
+    glColor3f(0.0, 1.0, 0.0);
+    glutWireSphere(1.0, 10, 10);
+    glPopMatrix();
+
+    /*----Draw eye coord. axes -----*/
+    glColor3f(1.0, 1.0, 0.0);           /* Draw Xe */
+    glBegin(GL_LINES);
+    glVertex3f(lookAtX, lookAtY, lookAtZ);
+    glVertex3f(lookAtX + 20.0 * u[0][0], lookAtY + 20.0 * u[0][1], lookAtZ + 20.0 * u[0][2]);
+    glEnd();
+
+    glColor3f(1.0, 0.0, 1.0);          /* Draw Ye */
+    glBegin(GL_LINES);
+    glVertex3f(lookAtX, lookAtY, lookAtZ);
+    glVertex3f(lookAtX + 20.0 * u[1][0], lookAtY + 20.0 * u[1][1], lookAtZ + 20.0 * u[1][2]);
+    glEnd();
+
+    glColor3f(0.0, 1.0, 1.0);          /* Draw Ze */
+    glBegin(GL_LINES);
+    glVertex3f(lookAtX, lookAtY, lookAtZ);
+    glVertex3f(lookAtX + 20.0 * u[2][0], lookAtY + 20.0 * u[2][1], lookAtZ + 20.0 * u[2][2]);
+    glEnd();
+}
+
+void draw_scene(){
+    glPushMatrix();
+    draw_floor();
+    draw_axes();
+    draw_tree();
+    draw_building();
+    draw_helicopter();
+    glPopMatrix();
+}
+
+void view_direction(int x){
+    switch(x){
+        case 0:
+        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+
+        break;
+        case 1:
+        gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+
+        break;
+        case 2:
+        gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+
+        break;
+        case 3:
+        gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+
+        break;
+    }
+}
+
+void multiview_projection(){
+    int viewportWidth = width / 2;
+    int viewportHeight = height / 2;
+
+    glPushMatrix();
+    // Top Left Viewport
+    glViewport(0, height / 2, viewportWidth, viewportHeight);
+    view_direction(0);
+    draw_scene();
+    glPopMatrix();
+
+    glPushMatrix();
+    // Top Right Viewport
+    glViewport(viewportWidth, height / 2, viewportWidth, viewportHeight);
+    view_direction(1);
+    draw_scene();
+    glPopMatrix();
+    glPushMatrix();
+    view_direction(1);
+    draw_view();
+    glPopMatrix();
+
+
+    glPushMatrix();
+    // Bottom Left Viewport
+    glViewport(0, 0, viewportWidth, viewportHeight);
+    view_direction(2);
+    draw_scene();
+    glPopMatrix();
+    glPushMatrix();
+    view_direction(2);
+    draw_view();
+    glPopMatrix();
+
+    glPushMatrix();
+    // Bottom Right Viewport
+    glViewport(viewportWidth, 0, viewportWidth, viewportHeight);
+    view_direction(3);
+    draw_scene();
+    glPopMatrix();
+    glPushMatrix();
+    view_direction(3);
+    draw_view();
+    glPopMatrix();
+}
+
+void singleview_projection(){
+    glLoadIdentity();
+    if(viewPoint == 3)
+        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else if(viewPoint == 2)
+        gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else if(viewPoint == 1)
+        gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    else
+        gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    draw_scene();
+}
+void display(){
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+
+    switch(viewMode){
+        case 0:
+        singleview_projection();
+        break;
+        case 1:
+        multiview_projection();
+        break;
+    }
+
+
     glutSwapBuffers();
 }
+
 
 void update(){
     if(helicopterY > ESP)
@@ -440,7 +567,12 @@ void keyboardDown(unsigned char key, int x, int y){
     keyboardStates[key] = true;
     switch(key){
         case 'v':
-        viewPoint = (viewPoint + 1) % 4;
+        if(viewMode == 0)
+            viewPoint = (viewPoint + 1) % 4;
+        break;
+
+        case 'm':
+        viewMode = (viewMode + 1) % 2;
         break;
 
         default:
