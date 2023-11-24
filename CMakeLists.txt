@@ -54,11 +54,14 @@ message(STATUS "C Release Flags: ${CMAKE_C_FLAGS_RELEASE}")
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(OpenCV 4 REQUIRED)
+find_package(Eigen3 REQUIRED)
+
 
 set(Codes
 
     # "wind_mill"
     "main"
+    "rotate"
     # "main2"
     # "tree"
 )
@@ -81,6 +84,8 @@ foreach(ex IN LISTS Codes)
         target_link_libraries(${ex} PRIVATE
             OpenGL32
             ${OpenCV_LIBS} # 这里链接OpenCV库
+            Eigen3::Eigen
+            
         )
     endif()
 endforeach()

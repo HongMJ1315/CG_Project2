@@ -9,6 +9,7 @@
 
 #include <GL/freeglut.h>
 #include <GL/glext.h>
+#include <Eigen/Dense>
 
 #include <fstream>
 #include <iostream>
@@ -108,5 +109,51 @@ void Tire(float r, float g, float b){
         24,   /* divided into 18 segments */
         12);  /* 12 rings */
     glPopMatrix();
+}
+
+
+
+
+Eigen::Matrix3f rotation_matrix(Eigen::Vector3f axis, double theta){
+    axis = axis / axis.norm();
+    double a = cos(theta / 2.0);
+    double b, c, d;
+    b = -axis(0) * sin(theta / 2.0);
+    c = -axis(1) * sin(theta / 2.0);
+    d = -axis(2) * sin(theta / 2.0);
+    double aa, bb, cc, dd;
+    aa = a * a; bb = b * b; cc = c * c; dd = d * d;
+    double bc, ad, ac, ab, bd, cd;
+    bc = b * c; ad = a * d; ac = a * c; ab = a * b; bd = b * d; cd = c * d;
+    Eigen::Matrix3f rot_mat;
+    rot_mat << aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac),
+        2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab),
+        2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc;
+    return rot_mat;
+}
+
+Eigen::Vector3f rotate_matrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
+    double t = degree * PI / 180;  
+
+    // 計算從O到P的向量
+    Eigen::Vector3f OP = P - O;
+    Eigen::Vector3f Z(0, 0, 1);
+
+    // 定義M平面的向量
+    // Eigen::Vector3f OM(O(0) - P(0), O(1) - P(1), 0);
+    Eigen::Vector3f OM(0, 1, 0);
+
+    // 計算旋轉軸
+    Eigen::Vector3f axis = OP.cross(OM);
+
+    // 正規化旋轉軸
+    axis = axis / axis.norm();
+
+    // 計算旋轉矩陣
+    Eigen::Matrix3f R = rotation_matrix(axis, t);
+
+    // 計算旋轉後的點
+    Eigen::Vector3f P_prime = R * OP + O;
+    return P_prime;
 }
 #endif

@@ -12,8 +12,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#define WIDTH 600
-#define HEIGHT 600
+
 
 #define INTERVAL 15
 
