@@ -368,6 +368,7 @@ void draw_scene(bool view = true){
     draw_helicopter();
     glPopMatrix();
 }
+/*
 void draw_view_pyramid(){
     float fov = 60.0;  // 視野角度
     float nearClip = 1.0;  // 近裁剪面
@@ -387,19 +388,8 @@ void draw_view_pyramid(){
 
     float cameraPos[3] = { helicopterX, helicopterY, helicopterZ };
     float lookAtPos[3] = { lookAtX, lookAtY, lookAtZ };
-
-    for(int i = 0; i < 3; i++){
-        nearTopLeft[i] += cameraPos[i];
-        nearTopRight[i] += cameraPos[i];
-        nearBottomLeft[i] += cameraPos[i];
-        nearBottomRight[i] += cameraPos[i];
-    }
-    std::cout << "nearTopLeft: " << nearTopLeft[0] << " " << nearTopLeft[1] << " " << nearTopLeft[2] << std::endl;
-    std::cout << "nearTopRight: " << nearTopRight[0] << " " << nearTopRight[1] << " " << nearTopRight[2] << std::endl;
-    std::cout << "nearBottomLeft: " << nearBottomLeft[0] << " " << nearBottomLeft[1] << " " << nearBottomLeft[2] << std::endl;
-    std::cout << "nearBottomRight: " << nearBottomRight[0] << " " << nearBottomRight[1] << " " << nearBottomRight[2] << std::endl;
-
 }
+// */
 void view_direction(int x){
     switch(x){
         case 0:

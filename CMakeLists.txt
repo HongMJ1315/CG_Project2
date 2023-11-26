@@ -58,7 +58,6 @@ find_package(Eigen3 REQUIRED)
 
 set(Codes
     "main"
-    "rotate2"
 )
 
 foreach(ex IN LISTS Codes)
