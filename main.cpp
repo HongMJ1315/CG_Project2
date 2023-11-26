@@ -14,16 +14,20 @@ int width = 600;
 int height = 600;
 float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
 float helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
-float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+// float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+float upX = 0.0, upY = 1.0, upZ = 0.0;
+float upDegree = 90.0;
 bool keyboardStates[256];
 bool directionKey[4];
+bool shiftKey = false;
 Model helicopterBody;
 Model helicopterBackTire;
 Model helicopterBackSupport;
 Model helicopterLeftTire;
 Model helicopterRightTire;
 Model building;
-float self_ang = 45.0;
+float self_ang = 0.0;
 std::pair<int, int> buildingPos[BUILDING_NUM];
 float buildingRotate[BUILDING_NUM];
 std::pair<int, int> treePos[TREE_NUM];
@@ -37,6 +41,8 @@ float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 
 const float sq2 = sqrt(2.0) / 2.0;
 int viewPoint = 3;
 int viewMode = 0;
+
+
 void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -98,6 +104,24 @@ void init(){
     }
 }
 
+void resetAll(){
+    for(int i = 0; i < 256; i++){
+        keyboardStates[i] = false;
+    }
+    for(int i = 0; i < 4; i++){
+        directionKey[i] = false;
+    }
+    helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
+    helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
+    lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+    upX = 0.0, upY = 1.0, upZ = 0.0;
+    upDegree = 90.0;
+    self_ang = 0.0;
+    bladeRotateSpeed = 0.5f;
+    viewPoint = 3;
+
+
+}
 
 void draw_floor(){
     int i, j;
@@ -116,8 +140,6 @@ void draw_floor(){
             glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
             glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
             glEnd();
-
-
         }
 }
 
@@ -144,13 +166,8 @@ void draw_building(){
         glTranslatef(tx, 0.0, tz);
         glRotatef(buildingRotate[i], 0.0f, 1.0f, 0.0f);
         glScaled(0.01, 0.01, 0.01);
-        // gluCylinder(cylind, 0.5, 0.5,
-        //     10.0,
-        //     12,
-        //     3);
         building.draw();
         glPopMatrix();
-
     }
 }
 
@@ -167,19 +184,12 @@ void draw_tree(){
         glScaled(10, 10, 10);
         tree[i].draw();
         glPopMatrix();
-
     }
 }
 
 void draw_helicopter(){
     glPushMatrix();
     glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
-    glPushMatrix();
-    glColor3f(0.9, 0.9, 0.9);
-    gluSphere(sphere, 2.0,   /* radius=2.0 */
-        12,            /* composing of 12 slices*/
-        12);           /* composing of 8 stacks */
-    glPopMatrix();
     glRotatef(-helicopterRotateY, 0.0f, 1.0f, 0.0f);
     glRotatef(-helicopterRotateX, 1.0f, 0.0f, 0.0f);
     glRotatef(-helicopterRotateZ, 0.0f, 0.0f, 1.0f);
@@ -277,15 +287,11 @@ void draw_helicopter(){
     glColor3f(0.67f, 0.70f, 0.73f);
     // helicopterBackSupport.draw();
 
-
     glColor3f(0.0f, 0.0f, 0.0f);
     // helicopterBackTire.draw();
     // helicopterLeftTire.draw();
     // helicopterRightTire.draw();
     */
-
-
-
 
     glColor3f(1, 1, 1);
     glPushMatrix();
@@ -364,7 +370,7 @@ void draw_scene(bool view = true){
 void view_direction(int x){
     switch(x){
         case 0:
-        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, upX, upY, upZ);
 
         break;
         case 1:
@@ -431,14 +437,14 @@ void multiview_projection(){
 void singleview_projection(){
     glLoadIdentity();
     if(viewPoint == 3)
-        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, upX, upY, upZ);
     else if(viewPoint == 2)
         gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     else if(viewPoint == 1)
         gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     else
         gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    draw_scene();
+    draw_scene(0);
 }
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -475,13 +481,13 @@ void zoom(float len){
     float dx = (lookAtX - helicopterX) / dis;
     float dy = (lookAtY - helicopterY) / dis;
     float dz = (lookAtZ - helicopterZ) / dis;
-    if(dis + len < 0.0001f){
+    if(dis + len < 0.0001f)
         return;
-    }
     lookAtX = lookAtX + dx * len;
     lookAtY = lookAtY + dy * len;
     lookAtZ = lookAtZ + dz * len;
 }
+
 void move_camera_lr(float degree){
     //旋轉中心
     float center_x = helicopterX,
@@ -497,8 +503,21 @@ void move_camera_lr(float degree){
     //移回
     lookAtX = tx + center_x;
     lookAtZ = tz + center_z;
-
 }
+
+void up_vector(){
+    Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
+    Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
+    Eigen::Vector3f l = P - O;
+    Eigen::Vector3f v(l.z(), 0, -l.x());
+    l = l / l.norm();
+    v = v / v.norm();
+    Eigen::Vector3f result = rotate_up(l, v, upDegree);
+    Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
+    upX = loc.x(); upY = loc.y(); upZ = loc.z();
+}
+
+
 void update(){
     if(helicopterY > ESP)
         self_ang += bladeRotateSpeed;
@@ -591,7 +610,7 @@ void update(){
     if(!directionKey[0] && !directionKey[1] && !keyboardStates['w'] && !keyboardStates['s'] && !keyboardStates['a'] && !keyboardStates['d']){
         bladeRotateSpeed = BLADE_SPEED;
     }
-    if(keyboardStates['r']){
+    if(keyboardStates['e']){
         if(keyboardStates['l']){
             keyboardStates['d'] = directionKey[3] = 1;
         }
@@ -627,6 +646,17 @@ void update(){
     if(keyboardStates['b']){
         zoom(-1.0f);
     }
+    //tu
+    if(keyboardStates['t']){
+        upDegree += 1.0f;
+
+    }
+    if(keyboardStates['u']){
+        upDegree -= 1.0f;
+
+    }
+    //fixed up vector  
+    up_vector();
     display();
 }
 
@@ -640,6 +670,32 @@ void keyboardDown(unsigned char key, int x, int y){
 
         case 'm':
         viewMode = (viewMode + 1) % 2;
+        break;
+        /*
+        case 't':
+        upDegree += 10.0f;
+        up_vector();
+        break;
+
+        case 'u':
+        upDegree -= 10.0f;
+        up_vector();
+        break;
+
+        case 'g':
+        move_camera_lr(10.0f);
+        up_vector();
+        break;
+
+        case 'j':
+        move_camera_lr(-10.0f);
+        up_vector();
+        break;
+        //*/
+
+        case 'r':
+        upDegree = 90.0f;
+        lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
         break;
         default:
         break;
@@ -664,6 +720,10 @@ void specialDown(int key, int x, int y){
         break;
         case GLUT_KEY_RIGHT:
         directionKey[3] = true;
+        break;
+
+        case GLUT_KEY_SHIFT_L:
+        resetAll();
         break;
         default:
         break;

@@ -156,4 +156,11 @@ Eigen::Vector3f rotate_matrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree
     Eigen::Vector3f P_prime = R * OP + O;
     return P_prime;
 }
+
+Eigen::Vector3f rotate_up(Eigen::Vector3f l, Eigen::Vector3f v, float degree){
+    Eigen::Vector3f result;
+    degree = degree * PI / 180;
+    result = v * cos(degree) + (l.cross(v) * sin(degree)) + l * (l.dot(v)) * (1 - cos(degree));
+    return result;
+}
 #endif

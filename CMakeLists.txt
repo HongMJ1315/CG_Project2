@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 
-project("1101 CG Sample Code"
+project("Helicopter"
     VERSION 0.1.0
     LANGUAGES CXX C
-    DESCRIPTION "1101 NTOU Computer Graphics Sample Code"
+    DESCRIPTION "Helicopter"
 )
 
 set(CMAKE_C_STANDARD 99)
@@ -56,14 +56,9 @@ find_package(GLUT REQUIRED)
 find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-
 set(Codes
-
-    # "wind_mill"
     "main"
-    "rotate"
-    # "main2"
-    # "tree"
+    "rotate2"
 )
 
 foreach(ex IN LISTS Codes)
@@ -83,9 +78,8 @@ foreach(ex IN LISTS Codes)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         target_link_libraries(${ex} PRIVATE
             OpenGL32
-            ${OpenCV_LIBS} # 这里链接OpenCV库
+            ${OpenCV_LIBS}
             Eigen3::Eigen
-            
         )
     endif()
 endforeach()
