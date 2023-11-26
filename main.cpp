@@ -21,6 +21,7 @@ float upDegree = 90.0;
 bool keyboardStates[256];
 bool directionKey[4];
 bool shiftKey = false;
+float axisDis = 100.0f;
 Model helicopterBody;
 Model helicopterBackTire;
 Model helicopterBackSupport;
@@ -104,7 +105,7 @@ void init(){
     }
 }
 
-void resetAll(){
+void reset_all(){
     for(int i = 0; i < 256; i++){
         keyboardStates[i] = false;
     }
@@ -339,34 +340,66 @@ void draw_view(){
     glPopMatrix();
 
     /*----Draw eye coord. axes -----*/
-    glColor3f(1.0, 1.0, 0.0);           /* Draw Xe */
+    glColor3f(1.0, 0.0, 0.0);           /* Draw Xe */
     glBegin(GL_LINES);
     glVertex3f(eye[0], eye[1], eye[2]);
     glVertex3f(eye[0] + 20.0 * u[0][0], eye[1] + 20.0 * u[0][1], eye[2] + 20.0 * u[0][2]);
     glEnd();
 
-    glColor3f(1.0, 0.0, 1.0);          /* Draw Ye */
+    glColor3f(0.0, 1.0, 0.0);          /* Draw Ye */
     glBegin(GL_LINES);
     glVertex3f(eye[0], eye[1], eye[2]);
     glVertex3f(eye[0] + 20.0 * u[1][0], eye[1] + 20.0 * u[1][1], eye[2] + 20.0 * u[1][2]);
     glEnd();
 
-    glColor3f(0.0, 1.0, 1.0);          /* Draw Ze */
+    glColor3f(0.0, 0.0, 1.0);          /* Draw Ze */
     glBegin(GL_LINES);
     glVertex3f(eye[0], eye[1], eye[2]);
     glVertex3f(eye[0] + 20.0 * u[2][0], eye[1] + 20.0 * u[2][1], eye[2] + 20.0 * u[2][2]);
     glEnd();
 }
+
 void draw_scene(bool view = true){
     glPushMatrix();
-    if(lookAtY > 0.0f || view)draw_floor();
+    if(view)draw_floor();
     draw_axes();
     draw_tree();
     draw_building();
     draw_helicopter();
     glPopMatrix();
 }
+void draw_view_pyramid(){
+    float fov = 60.0;  // 視野角度
+    float nearClip = 1.0;  // 近裁剪面
+    float farClip = 1000.0;  // 遠裁剪面
+    float aspectRatio = (float) width / (float) height;  // 視圖的擴張比例
 
+    // 計算近裁剪面的一半高度和寬度
+    float nearHeight = tan(fov / 2.0 * (PI / 180.0)) * nearClip;
+    float nearWidth = nearHeight * aspectRatio;
+
+    // 計算近裁剪面的四個角的坐標
+    float nearTopLeft[3] = { -nearWidth, nearHeight, -nearClip };
+    float nearTopRight[3] = { nearWidth, nearHeight, -nearClip };
+    float nearBottomLeft[3] = { -nearWidth, -nearHeight, -nearClip };
+    float nearBottomRight[3] = { nearWidth, -nearHeight, -nearClip };
+
+
+    float cameraPos[3] = { helicopterX, helicopterY, helicopterZ };
+    float lookAtPos[3] = { lookAtX, lookAtY, lookAtZ };
+
+    for(int i = 0; i < 3; i++){
+        nearTopLeft[i] += cameraPos[i];
+        nearTopRight[i] += cameraPos[i];
+        nearBottomLeft[i] += cameraPos[i];
+        nearBottomRight[i] += cameraPos[i];
+    }
+    std::cout << "nearTopLeft: " << nearTopLeft[0] << " " << nearTopLeft[1] << " " << nearTopLeft[2] << std::endl;
+    std::cout << "nearTopRight: " << nearTopRight[0] << " " << nearTopRight[1] << " " << nearTopRight[2] << std::endl;
+    std::cout << "nearBottomLeft: " << nearBottomLeft[0] << " " << nearBottomLeft[1] << " " << nearBottomLeft[2] << std::endl;
+    std::cout << "nearBottomRight: " << nearBottomRight[0] << " " << nearBottomRight[1] << " " << nearBottomRight[2] << std::endl;
+
+}
 void view_direction(int x){
     switch(x){
         case 0:
@@ -374,15 +407,15 @@ void view_direction(int x){
 
         break;
         case 1:
-        gluLookAt(helicopterX, helicopterY, helicopterZ - 100.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(helicopterX, helicopterY, helicopterZ + axisDis, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
         case 2:
-        gluLookAt(helicopterX + 0.01f, helicopterY + 100.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(helicopterX + 0.01f, helicopterY + axisDis, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
         case 3:
-        gluLookAt(helicopterX + 100.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(helicopterX + axisDis, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
     }
@@ -396,18 +429,23 @@ void multiview_projection(){
     // Top Left Viewport
     glViewport(0, height / 2, viewportWidth, viewportHeight);
     view_direction(0);
-    draw_scene(0);
+    draw_scene((lookAtY) > ESP);
+    glPopMatrix();
+    glPushMatrix();
+    view_direction(0);
+    draw_view();
     glPopMatrix();
 
     glPushMatrix();
     // Top Right Viewport
     glViewport(viewportWidth, height / 2, viewportWidth, viewportHeight);
     view_direction(2);
-    draw_scene();
+    draw_scene((helicopterY + axisDis) > ESP);
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
     draw_view();
+    // draw_view_pyramid();
     glPopMatrix();
 
 
@@ -420,6 +458,7 @@ void multiview_projection(){
     glPushMatrix();
     view_direction(1);
     draw_view();
+    // draw_view_pyramid();
     glPopMatrix();
 
     glPushMatrix();
@@ -431,6 +470,7 @@ void multiview_projection(){
     glPushMatrix();
     view_direction(3);
     draw_view();
+    // draw_view_pyramid();
     glPopMatrix();
 }
 
@@ -439,12 +479,16 @@ void singleview_projection(){
     if(viewPoint == 3)
         gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, upX, upY, upZ);
     else if(viewPoint == 2)
-        gluLookAt(helicopterX, helicopterY, helicopterZ - 10.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(helicopterX, helicopterY, helicopterZ + axisDis, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     else if(viewPoint == 1)
-        gluLookAt(helicopterX + 0.01f, helicopterY + 10.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        gluLookAt(helicopterX + 0.01f, helicopterY + axisDis, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     else
-        gluLookAt(helicopterX + 10.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    draw_scene(0);
+        gluLookAt(helicopterX + axisDis, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    if(viewPoint == 3) draw_scene((lookAtY > ESP));
+    else if(viewPoint == 1) draw_scene((helicopterY + axisDis) > ESP);
+    else draw_scene();
+    draw_view();
+
 }
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -470,9 +514,13 @@ void move_camera_ud(float degree){
     Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
     Eigen::Vector3f result = rotate_matrix(O, P, degree);
     Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
-    if(loc.x() * lookAtX < 0.0001f){
-        return;
-    }
+
+    Eigen::Vector3f tresult = result - O;
+    Eigen::Vector3f tv = Eigen::Vector3f(0, 1, 0);
+    float cos_theta = tresult.dot(tv) / (tresult.norm() * tv.norm());
+    float angle = acos(cos_theta) * 180.0 / PI;
+
+    if(angle < ESP || 180.0f - angle < ESP) return;
     lookAtX = loc.x(); lookAtY = loc.y(); lookAtZ = loc.z();
 }
 
@@ -517,7 +565,11 @@ void up_vector(){
     upX = loc.x(); upY = loc.y(); upZ = loc.z();
 }
 
+void axis_distance(float len){
+    axisDis += len;
 
+    std::cout << axisDis << " " << len << std::endl;
+}
 void update(){
     if(helicopterY > ESP)
         self_ang += bladeRotateSpeed;
@@ -628,6 +680,7 @@ void update(){
 // /*
     if(keyboardStates['y']){
         move_camera_ud(1.0f);
+        std::cout << "lookAt:(" << lookAtX << ", " << lookAtY << ", " << lookAtZ << ")" << std::endl;
     }
     if(keyboardStates['h']){
         move_camera_ud(-1.0f);
@@ -657,6 +710,13 @@ void update(){
     }
     //fixed up vector  
     up_vector();
+
+    if(keyboardStates['=']){
+        axis_distance(5.0f);
+    }
+    if(keyboardStates['-']){
+        axis_distance(-5.0f);
+    }
     display();
 }
 
@@ -671,28 +731,6 @@ void keyboardDown(unsigned char key, int x, int y){
         case 'm':
         viewMode = (viewMode + 1) % 2;
         break;
-        /*
-        case 't':
-        upDegree += 10.0f;
-        up_vector();
-        break;
-
-        case 'u':
-        upDegree -= 10.0f;
-        up_vector();
-        break;
-
-        case 'g':
-        move_camera_lr(10.0f);
-        up_vector();
-        break;
-
-        case 'j':
-        move_camera_lr(-10.0f);
-        up_vector();
-        break;
-        //*/
-
         case 'r':
         upDegree = 90.0f;
         lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
@@ -700,7 +738,6 @@ void keyboardDown(unsigned char key, int x, int y){
         default:
         break;
     }
-    // std::cout << "viewPoint: " << viewPoint << std::endl;
 
 }
 
@@ -723,7 +760,7 @@ void specialDown(int key, int x, int y){
         break;
 
         case GLUT_KEY_SHIFT_L:
-        resetAll();
+        reset_all();
         break;
         default:
         break;

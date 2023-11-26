@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <time.h>
+#include <cmath>
 
 #include <GL/freeglut.h>
 #include <GL/glext.h>
@@ -68,7 +69,7 @@ void draw_axes(){
 
     /*----Draw three axes in colors, yellow, meginta, and cyan--*/
     /* Draw Z axis  */
-    glColor3f(0.0, 0.95, 0.95);
+    glColor3f(0.0, 0.0, 1.0);
     gluCylinder(cylind, 0.5, 0.5, /* radius of top and bottom circle */
         10.0,              /* height of the cylinder */
         12,               /* use 12-side polygon approximating circle*/
@@ -77,7 +78,7 @@ void draw_axes(){
     /* Draw Y axis */
     glPushMatrix();
     glRotatef(-90.0, 1.0, 0.0, 0.0);  /*Rotate about x by -90', z becomes y */
-    glColor3f(0.95, 0.0, 0.95);
+    glColor3f(0.0, 1.0, 0.0);
     gluCylinder(cylind, 0.5, 0.5, /* radius of top and bottom circle */
         10.0,             /* height of the cylinder */
         12,               /* use 12-side polygon approximating circle*/
@@ -85,7 +86,7 @@ void draw_axes(){
     glPopMatrix();
 
     /* Draw X axis */
-    glColor3f(0.95, 0.95, 0.0);
+    glColor3f(1.0, 0.0, 0.0);
     glPushMatrix();
     glRotatef(90.0, 0.0, 1.0, 0.0);  /*Rotate about y  by 90', x becomes z */
     gluCylinder(cylind, 0.5, 0.5,   /* radius of top and bottom circle */
@@ -133,7 +134,7 @@ Eigen::Matrix3f rotation_matrix(Eigen::Vector3f axis, double theta){
 }
 
 Eigen::Vector3f rotate_matrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
-    double t = degree * PI / 180;  
+    double t = degree * PI / 180;
 
     // 計算從O到P的向量
     Eigen::Vector3f OP = P - O;
