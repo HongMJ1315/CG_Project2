@@ -361,15 +361,6 @@ void draw_view(){
     glEnd();
 }
 
-void draw_scene(bool view = true){
-    glPushMatrix();
-    if(view)draw_floor();
-    draw_axes();
-    draw_tree();
-    draw_building();
-    draw_helicopter();
-    glPopMatrix();
-}
 // /*
 void draw_view_pyramid(){
     float fov = CLIP_DEGREE;  // 視野角度
@@ -425,11 +416,18 @@ void draw_view_pyramid(){
     glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
     glVertex3f(farClipBottomLeft.x(), farClipBottomLeft.y(), farClipBottomLeft.z());
     glEnd();
-
-
-
 }
 // */
+void draw_scene(bool viewVolume, bool view = true){
+    glPushMatrix();
+    if(view)draw_floor();
+    if(viewVolume) draw_view_pyramid();
+    draw_axes();
+    draw_tree();
+    draw_building();
+    draw_helicopter();
+    glPopMatrix();
+}
 void view_direction(int x){
     switch(x){
         case 0:
@@ -471,7 +469,7 @@ void multiview_projection(){
     // Top Left Viewport
     glViewport(0, height / 2, viewportWidth, viewportHeight);
     view_direction(0);
-    draw_scene((lookAtY) > ESP);
+    draw_scene(0, (lookAtY) > ESP);
     glPopMatrix();
     glPushMatrix();
     view_direction(0);
@@ -482,12 +480,11 @@ void multiview_projection(){
     // Top Right Viewport
     glViewport(viewportWidth, height / 2, viewportWidth, viewportHeight);
     view_direction(2);
-    draw_scene((helicopterY ) > ESP);
+    draw_scene(1, (helicopterY ) > ESP);
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
     draw_view();
-    draw_view_pyramid();
     glPopMatrix();
 
 
@@ -495,24 +492,22 @@ void multiview_projection(){
     // Bottom Left Viewport
     glViewport(0, 0, viewportWidth, viewportHeight);
     view_direction(1);
-    draw_scene();
+    draw_scene(1);
     glPopMatrix();
     glPushMatrix();
     view_direction(1);
     draw_view();
-    draw_view_pyramid();
     glPopMatrix();
 
     glPushMatrix();
     // Bottom Right Viewport
     glViewport(viewportWidth, 0, viewportWidth, viewportHeight);
     view_direction(3);
-    draw_scene();
+    draw_scene(1);
     glPopMatrix();
     glPushMatrix();
     view_direction(3);
     draw_view();
-    draw_view_pyramid();
     glPopMatrix();
 }
 
@@ -535,9 +530,8 @@ void singleview_projection(){
         glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 100);
         gluLookAt(helicopterX + 1.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
     }
-    if(viewPoint == 3) draw_scene((lookAtY > ESP));
-    else if(viewPoint == 1) draw_scene((helicopterY ) > ESP);
-    else draw_scene();
+    if(viewPoint == 3) draw_scene(0, (lookAtY > ESP));
+    else draw_scene(1);
     draw_view();
 
 }
@@ -545,7 +539,6 @@ void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
 
     switch(viewMode){
         case 0:
@@ -555,8 +548,6 @@ void display(){
         multiview_projection();
         break;
     }
-
-
     glutSwapBuffers();
 }
 
