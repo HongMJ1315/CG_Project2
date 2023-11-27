@@ -58,6 +58,7 @@ find_package(Eigen3 REQUIRED)
 
 set(Codes
     "main"
+    "test"
 )
 
 foreach(ex IN LISTS Codes)

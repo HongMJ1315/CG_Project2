@@ -10,6 +10,9 @@
 #define ROTATE_SPEED 1.5f
 #define BLADE_SPEED 5.0f
 #define ESP 1e-6
+#define NEAR_CLIP 1.0f
+#define FAR_CLIP 1000.0f
+#define CLIP_DEGREE 60.0f
 int width = 600;
 int height = 600;
 float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
@@ -154,7 +157,7 @@ void reshap(int w, int h){
     glLoadIdentity();
 
     // glOrtho(-w / 10, w / 10, -h / 10, h / 10, -1000, 1000);
-    gluPerspective(60.0, (float) w / (float) h, 1.0, 1000.0);
+    gluPerspective(CLIP_DEGREE, (float) w / (float) h, NEAR_CLIP, FAR_CLIP);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
@@ -368,26 +371,64 @@ void draw_scene(bool view = true){
     draw_helicopter();
     glPopMatrix();
 }
-/*
+// /*
 void draw_view_pyramid(){
-    float fov = 60.0;  // 視野角度
-    float nearClip = 1.0;  // 近裁剪面
-    float farClip = 1000.0;  // 遠裁剪面
+    float fov = CLIP_DEGREE;  // 視野角度
+    float nearClip = NEAR_CLIP;  // 近裁剪面
+    float farClip = FAR_CLIP;  // 遠裁剪面
     float aspectRatio = (float) width / (float) height;  // 視圖的擴張比例
 
     // 計算近裁剪面的一半高度和寬度
     float nearHeight = tan(fov / 2.0 * (PI / 180.0)) * nearClip;
     float nearWidth = nearHeight * aspectRatio;
+    float farHeight = tan(fov / 2.0 * (PI / 180.0)) * farClip;
+    float farWidth = farHeight * aspectRatio;
 
-    // 計算近裁剪面的四個角的坐標
-    float nearTopLeft[3] = { -nearWidth, nearHeight, -nearClip };
-    float nearTopRight[3] = { nearWidth, nearHeight, -nearClip };
-    float nearBottomLeft[3] = { -nearWidth, -nearHeight, -nearClip };
-    float nearBottomRight[3] = { nearWidth, -nearHeight, -nearClip };
+    // 利用相機位置和觀察點位置計算近裁剪面的中心點
+    Eigen::Vector3f helicopterPos(helicopterX, helicopterY, helicopterZ);
+    Eigen::Vector3f lookAtPos(lookAtX, lookAtY, lookAtZ);
+    Eigen::Vector3f viewDir = (lookAtPos - helicopterPos).normalized();
+    Eigen::Vector3f nearClipCenter = lookAtPos - nearClip * viewDir,
+        farClipCenter = lookAtPos - farClip * viewDir;
+
+    Eigen::Vector3f nearCilpTopRight, nearClipTopLeft, nearClipBottomRight, nearClipBottomLeft;
+    Eigen::Vector3f farCilpTopRight, farClipTopLeft, farClipBottomRight, farClipBottomLeft;
+    Eigen::Vector3f lr(viewDir.z(), 0, -viewDir.x());
+    Eigen::Vector3f ud = lr.cross(viewDir);
+    ud = ud / ud.norm();
+    lr = lr / lr.norm();
+    Eigen::Vector3f rud = rotate_up(viewDir, ud, upDegree);
+    Eigen::Vector3f rlr = rotate_up(viewDir, lr, upDegree);
+    nearCilpTopRight = nearClipCenter + nearWidth * rlr + nearHeight * rud;
+    nearClipTopLeft = nearClipCenter - nearWidth * rlr + nearHeight * rud;
+    nearClipBottomRight = nearClipCenter + nearWidth * rlr - nearHeight * rud;
+    nearClipBottomLeft = nearClipCenter - nearWidth * rlr - nearHeight * rud;
+    farCilpTopRight = farClipCenter + farWidth * rlr + farHeight * rud;
+    farClipTopLeft = farClipCenter - farWidth * rlr + farHeight * rud;
+    farClipBottomRight = farClipCenter + farWidth * rlr - farHeight * rud;
+    farClipBottomLeft = farClipCenter - farWidth * rlr - farHeight * rud;
+    //
+
+    glColor3f(1.0, 1.0, 1.0);
+    glBegin(GL_LINE_LOOP);
+    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
+    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
+    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
+    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
+    glVertex3f(farClipTopLeft.x(), farClipTopLeft.y(), farClipTopLeft.z());
+    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
+    glVertex3f(farCilpTopRight.x(), farCilpTopRight.y(), farCilpTopRight.z());
+    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
+    glVertex3f(farClipBottomRight.x(), farClipBottomRight.y(), farClipBottomRight.z());
+    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
+    glVertex3f(farClipBottomLeft.x(), farClipBottomLeft.y(), farClipBottomLeft.z());
+    glEnd();
 
 
-    float cameraPos[3] = { helicopterX, helicopterY, helicopterZ };
-    float lookAtPos[3] = { lookAtX, lookAtY, lookAtZ };
+
 }
 // */
 void view_direction(int x){
@@ -435,7 +476,7 @@ void multiview_projection(){
     glPushMatrix();
     view_direction(2);
     draw_view();
-    // draw_view_pyramid();
+    draw_view_pyramid();
     glPopMatrix();
 
 
@@ -448,7 +489,7 @@ void multiview_projection(){
     glPushMatrix();
     view_direction(1);
     draw_view();
-    // draw_view_pyramid();
+    draw_view_pyramid();
     glPopMatrix();
 
     glPushMatrix();
@@ -460,7 +501,7 @@ void multiview_projection(){
     glPushMatrix();
     view_direction(3);
     draw_view();
-    // draw_view_pyramid();
+    draw_view_pyramid();
     glPopMatrix();
 }
 
@@ -670,7 +711,6 @@ void update(){
 // /*
     if(keyboardStates['y']){
         move_camera_ud(1.0f);
-        std::cout << "lookAt:(" << lookAtX << ", " << lookAtY << ", " << lookAtZ << ")" << std::endl;
     }
     if(keyboardStates['h']){
         move_camera_ud(-1.0f);
@@ -749,7 +789,7 @@ void specialDown(int key, int x, int y){
         directionKey[3] = true;
         break;
 
-        case GLUT_KEY_SHIFT_L:
+        case GLUT_KEY_SHIFT_R:
         reset_all();
         break;
         default:
