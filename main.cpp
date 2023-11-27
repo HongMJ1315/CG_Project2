@@ -148,18 +148,7 @@ void draw_floor(){
         }
 }
 
-void reshap(int w, int h){
-    width = w;
-    height = h;
 
-    glViewport(0, 0, w, h);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
 void draw_building(){
     for(int i = 0; i < BUILDING_NUM; i++){
         glColor3f(0.5, 0.5, 0.5);
@@ -513,6 +502,7 @@ void multiview_projection(){
 
 void singleview_projection(){
     glLoadIdentity();
+    glViewport(0, 0, width, height);
     const float test = 15;
     if(viewPoint == 3){
         gluPerspective(CLIP_DEGREE, (float) width / (float) height, NEAR_CLIP, FAR_CLIP);
@@ -551,6 +541,13 @@ void display(){
     glutSwapBuffers();
 }
 
+void reshap(int w, int h){
+    width = w;
+    height = h;
+
+
+    display();
+}
 void move_camera_ud(float degree){
     Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
     Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
