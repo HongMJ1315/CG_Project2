@@ -24,7 +24,8 @@ float upDegree = 90.0;
 bool keyboardStates[256];
 bool directionKey[4];
 bool shiftKey = false;
-float axisDis = 100.0f;
+
+float orthographicScale = 10;
 Model helicopterBody;
 Model helicopterBackTire;
 Model helicopterBackSupport;
@@ -156,8 +157,6 @@ void reshap(int w, int h){
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    // glOrtho(-w / 10, w / 10, -h / 10, h / 10, -1000, 1000);
-    gluPerspective(CLIP_DEGREE, (float) w / (float) h, NEAR_CLIP, FAR_CLIP);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
@@ -434,19 +433,31 @@ void draw_view_pyramid(){
 void view_direction(int x){
     switch(x){
         case 0:
+        // glOrtho(-w / 10, w / 10, -h / 10, h / 10, -1000, 1000);
+        gluPerspective(CLIP_DEGREE, (float) width / (float) height, NEAR_CLIP, FAR_CLIP);
+
         gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, upX, upY, upZ);
 
         break;
         case 1:
-        gluLookAt(helicopterX, helicopterY, helicopterZ + axisDis, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 1000);
+        // gluPerspective(CLIP_DEGREE, (float) w / (float) h, NEAR_CLIP, FAR_CLIP);
+
+        gluLookAt(helicopterX, helicopterY, helicopterZ + 1.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
         case 2:
-        gluLookAt(helicopterX + 0.01f, helicopterY + axisDis, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 1000);
+        // gluPerspective(CLIP_DEGREE, (float) w / (float) h, NEAR_CLIP, FAR_CLIP);
+
+        gluLookAt(helicopterX + 0.01f, helicopterY + 1.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
         case 3:
-        gluLookAt(helicopterX + axisDis, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 1000);
+        // gluPerspective(CLIP_DEGREE, (float) w / (float) h, NEAR_CLIP, FAR_CLIP);
+        gluLookAt(helicopterX + 1.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
 
         break;
     }
@@ -471,7 +482,7 @@ void multiview_projection(){
     // Top Right Viewport
     glViewport(viewportWidth, height / 2, viewportWidth, viewportHeight);
     view_direction(2);
-    draw_scene((helicopterY + axisDis) > ESP);
+    draw_scene((helicopterY ) > ESP);
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
@@ -507,16 +518,25 @@ void multiview_projection(){
 
 void singleview_projection(){
     glLoadIdentity();
-    if(viewPoint == 3)
+    const float test = 15;
+    if(viewPoint == 3){
+        gluPerspective(CLIP_DEGREE, (float) width / (float) height, NEAR_CLIP, FAR_CLIP);
         gluLookAt(lookAtX, lookAtY, lookAtZ, helicopterX, helicopterY, helicopterZ, upX, upY, upZ);
-    else if(viewPoint == 2)
-        gluLookAt(helicopterX, helicopterY, helicopterZ + axisDis, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    else if(viewPoint == 1)
-        gluLookAt(helicopterX + 0.01f, helicopterY + axisDis, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
-    else
-        gluLookAt(helicopterX + axisDis, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    }
+    else if(viewPoint == 2){
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 1000);
+        gluLookAt(helicopterX, helicopterY, helicopterZ + 1.0f, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    }
+    else if(viewPoint == 1){
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 1000);
+        gluLookAt(helicopterX + 0.01f, helicopterY + 1.0f, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    }
+    else{
+        glOrtho(-width / orthographicScale, width / orthographicScale, -height / orthographicScale, height / orthographicScale, -1000, 100);
+        gluLookAt(helicopterX + 1.0f, helicopterY, helicopterZ, helicopterX, helicopterY, helicopterZ, 0.0f, 1.0f, 0.0f);
+    }
     if(viewPoint == 3) draw_scene((lookAtY > ESP));
-    else if(viewPoint == 1) draw_scene((helicopterY + axisDis) > ESP);
+    else if(viewPoint == 1) draw_scene((helicopterY ) > ESP);
     else draw_scene();
     draw_view();
 
@@ -597,9 +617,9 @@ void up_vector(){
 }
 
 void axis_distance(float len){
-    axisDis += len;
+    orthographicScale += len;
 
-    std::cout << axisDis << " " << len << std::endl;
+    // std::cout << axisDis << " " << len << std::endl;
 }
 void update(){
     if(helicopterY > ESP)
@@ -742,10 +762,10 @@ void update(){
     up_vector();
 
     if(keyboardStates['=']){
-        axis_distance(5.0f);
+        axis_distance(1.0f);
     }
     if(keyboardStates['-']){
-        axis_distance(-5.0f);
+        axis_distance(-1.0f);
     }
     display();
 }
