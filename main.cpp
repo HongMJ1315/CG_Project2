@@ -9,7 +9,6 @@
 #define MOVE_SPEED 0.75f
 #define ROTATE_SPEED 1.5f
 #define BLADE_SPEED 5.0f
-#define ESP 1e-6
 #define NEAR_CLIP 1.0f
 #define FAR_CLIP 1000.0f
 #define CLIP_DEGREE 60.0f
@@ -128,295 +127,20 @@ void reset_all(){
 
 }
 
-void draw_floor(){
-    int i, j;
-
-    for(i = 0; i < MAP_LENGTH; i++)
-        for(j = 0; j < MAP_LENGTH; j++){
-            if((i + j) % 2 == 0){
-                glColor3f(1.0, 0.8, 0.8);
-            }
-            else{
-                glColor3f(0.1, 0.1, 0.7);
-            }
-            glBegin(GL_POLYGON);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
-            glEnd();
-        }
-}
 
 
-void draw_building(){
-    for(int i = 0; i < BUILDING_NUM; i++){
-        glColor3f(0.5, 0.5, 0.5);
-        glPushMatrix();
-        int tx = buildingPos[i].first;
-        int tz = buildingPos[i].second;
-        glTranslatef(tx, 0.0, tz);
-        glRotatef(buildingRotate[i], 0.0f, 1.0f, 0.0f);
-        glScaled(0.01, 0.01, 0.01);
-        building.draw();
-        glPopMatrix();
-    }
-}
 
-void draw_tree(){
-    for(int i = 0; i < TREE_NUM; i++){
-        // glColor3f(1, 1, 1);
-        glPushMatrix();
-        int tx = treePos[i].first;
-        int tz = treePos[i].second;
-        glTranslatef(tx, 0.0, tz);
-        glRotatef(treeRotate[i], 0.0f, 1.0f, 0.0f);
-        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-
-        glScaled(10, 10, 10);
-        tree[i].draw();
-        glPopMatrix();
-    }
-}
-
-void draw_helicopter(){
-    glPushMatrix();
-    glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
-    glRotatef(-helicopterRotateY, 0.0f, 1.0f, 0.0f);
-    glRotatef(-helicopterRotateX, 1.0f, 0.0f, 0.0f);
-    glRotatef(-helicopterRotateZ, 0.0f, 0.0f, 1.0f);
-    glRotatef(180.0f, 0.0f, 1.0f, 0.0f);
-    // glPushMatrix();
-
-    // glScalef(10.0f, 10.0f, 10.0f);
-
-    //Main body
-    glPushMatrix();
-    glTranslatef(-6.0f, 0, 0.0f);
-    glScalef(12, 10, 12);
-    Cube(0.10f, 0.44f, 0.24f);
-    glPopMatrix();
-
-    //Tail
-    glPushMatrix();
-    glTranslatef(-1.5, 0, -12);
-    glScalef(3, 3, 12);
-    Cube(0.67f, 0.70f, 0.73f);
-    glPopMatrix();
-    glPushMatrix();
-    glTranslatef(-1.5, 3, -12);
-    glScalef(3, 5, 3);
-    Cube(115.0 / 255.0, 198.0 / 255.0, 182.0 / 255.0);
-    glPopMatrix();
-
-    //Tail rotor support
-    glPushMatrix();
-    glTranslatef(1, 5, -12);
-    glScalef(1, 3, 3);
-    Cube(133.0 / 255.0, 193.0 / 255.0, 233.0 / 255.0);
-    glPopMatrix();
-
-    //Tire support back
-    glPushMatrix();
-    glTranslatef(-0.5, -1, -13);
-    glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
-    glScalef(1, 3, 1);
-    Cube(133.0 / 255.0, 193.0 / 255.0, 233.0 / 255.0);
-    glPopMatrix();
-
-    //Tire back
-    glPushMatrix();
-    glTranslatef(0, -1, -13);
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glScalef(0.5, 0.5, 0.5);
-    Tire(0, 0, 0);
-    glPopMatrix();
-
-    // Main rotor support
-    glPushMatrix();
-    glTranslatef(-1.5, 10, 5);
-    glScalef(3, 3, 3);
-    Cube(174.0 / 255.0, 214.0 / 255.0, 241.0 / 255.0);
-    glPopMatrix();
-
-    //Tire support right
-    glPushMatrix();
-    glTranslatef(7, -1, 3.5);
-    glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
-    glScalef(1, 3, 1);
-    Cube(133.0 / 255.0, 193.0 / 255.0, 233.0 / 255.0);
-    glPopMatrix();
-
-    //Tire right
-    glPushMatrix();
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glTranslatef(-4, -1, -7.5);
-    glScalef(0.5, 0.5, 0.5);
-    Tire(0, 0, 0);
-    glPopMatrix();
-
-    //Tier support left
-    glPushMatrix();
-    glTranslatef(-8, -1, 3.5);
-    glRotatef(-45.0f, 0.0f, 0.0f, 1.0f);
-    glScalef(1, 3, 1);
-    Cube(133.0 / 255.0, 193.0 / 255.0, 233.0 / 255.0);
-    glPopMatrix();
-
-    //Tire left
-    glPushMatrix();
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glTranslatef(-4, -1, 7.5);
-    glScalef(0.5, 0.5, 0.5);
-    Tire(0, 0, 0);
-    glPopMatrix();
-
-
-    /*
-    glColor3f(0.10f, 0.44f, 0.24f);
-    // helicopterBody.draw();
-
-    glColor3f(0.67f, 0.70f, 0.73f);
-    // helicopterBackSupport.draw();
-
-    glColor3f(0.0f, 0.0f, 0.0f);
-    // helicopterBackTire.draw();
-    // helicopterLeftTire.draw();
-    // helicopterRightTire.draw();
-    */
-
-    glColor3f(1, 1, 1);
-    glPushMatrix();
-    glTranslated(0, 13.1, 7);
-    glRotated(self_ang, 0.0, 1.0, 0.0);
-    for(int i = 0; i < 4; i++){
-        glPushMatrix();
-        glTranslated(1, 0, -38);
-        glScalef(1, 1, 5);
-        glRotated(90.0, 1.0, 0.0, 0.0);
-        Blade();
-
-        glPopMatrix();
-        glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    }
-    glPopMatrix();
-    glPushMatrix();
-    glTranslated(2.1, 6.5, -10.5);
-    glRotated(self_ang, 1.0, 0.0, 0.0);
-    for(int i = 0; i < 4; i++){
-        glPushMatrix();
-        glTranslated(0, -8, 0.5);
-        glScalef(1, 1, 0.5);
-        glRotated(90.0, 0, 1.0, 0.0);
-        Blade();
-
-        glPopMatrix();
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    }
-    glPopMatrix();
-
-    glPopMatrix();
-}
-
-void draw_view(){
-    int    i;
-
-    glMatrixMode(GL_MODELVIEW);
-    float eye[3] = { helicopterX + 10, helicopterY, helicopterZ };
-    /*----Draw Eye position-----*/
-    glPushMatrix();
-    glTranslatef(eye[0], eye[1], eye[2]);
-    glColor3f(0.0, 1.0, 0.0);
-    glutWireSphere(1.0, 10, 10);
-    glPopMatrix();
-
-    /*----Draw eye coord. axes -----*/
-    glColor3f(1.0, 0.0, 0.0);           /* Draw Xe */
-    glBegin(GL_LINES);
-    glVertex3f(eye[0], eye[1], eye[2]);
-    glVertex3f(eye[0] + 20.0 * u[0][0], eye[1] + 20.0 * u[0][1], eye[2] + 20.0 * u[0][2]);
-    glEnd();
-
-    glColor3f(0.0, 1.0, 0.0);          /* Draw Ye */
-    glBegin(GL_LINES);
-    glVertex3f(eye[0], eye[1], eye[2]);
-    glVertex3f(eye[0] + 20.0 * u[1][0], eye[1] + 20.0 * u[1][1], eye[2] + 20.0 * u[1][2]);
-    glEnd();
-
-    glColor3f(0.0, 0.0, 1.0);          /* Draw Ze */
-    glBegin(GL_LINES);
-    glVertex3f(eye[0], eye[1], eye[2]);
-    glVertex3f(eye[0] + 20.0 * u[2][0], eye[1] + 20.0 * u[2][1], eye[2] + 20.0 * u[2][2]);
-    glEnd();
-}
-
-// /*
-void draw_view_pyramid(){
-    float fov = CLIP_DEGREE;  // 視野角度
-    float nearClip = NEAR_CLIP;  // 近裁剪面
-    float farClip = FAR_CLIP;  // 遠裁剪面
-    float aspectRatio = (float) width / (float) height;  // 視圖的擴張比例
-
-    // 計算近裁剪面的一半高度和寬度
-    float nearHeight = tan(fov / 2.0 * (PI / 180.0)) * nearClip;
-    float nearWidth = nearHeight * aspectRatio;
-    float farHeight = tan(fov / 2.0 * (PI / 180.0)) * farClip;
-    float farWidth = farHeight * aspectRatio;
-
-    // 利用相機位置和觀察點位置計算近裁剪面的中心點
-    Eigen::Vector3f helicopterPos(helicopterX, helicopterY, helicopterZ);
-    Eigen::Vector3f lookAtPos(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f viewDir = (lookAtPos - helicopterPos).normalized();
-    Eigen::Vector3f nearClipCenter = lookAtPos - nearClip * viewDir,
-        farClipCenter = lookAtPos - farClip * viewDir;
-
-    Eigen::Vector3f nearCilpTopRight, nearClipTopLeft, nearClipBottomRight, nearClipBottomLeft;
-    Eigen::Vector3f farCilpTopRight, farClipTopLeft, farClipBottomRight, farClipBottomLeft;
-    Eigen::Vector3f lr(viewDir.z(), 0, -viewDir.x());
-    Eigen::Vector3f ud = lr.cross(viewDir);
-    ud = ud / ud.norm();
-    lr = lr / lr.norm();
-    Eigen::Vector3f rud = rotate_up(viewDir, ud, upDegree);
-    Eigen::Vector3f rlr = rotate_up(viewDir, lr, upDegree);
-    nearCilpTopRight = nearClipCenter + nearWidth * rlr + nearHeight * rud;
-    nearClipTopLeft = nearClipCenter - nearWidth * rlr + nearHeight * rud;
-    nearClipBottomRight = nearClipCenter + nearWidth * rlr - nearHeight * rud;
-    nearClipBottomLeft = nearClipCenter - nearWidth * rlr - nearHeight * rud;
-    farCilpTopRight = farClipCenter + farWidth * rlr + farHeight * rud;
-    farClipTopLeft = farClipCenter - farWidth * rlr + farHeight * rud;
-    farClipBottomRight = farClipCenter + farWidth * rlr - farHeight * rud;
-    farClipBottomLeft = farClipCenter - farWidth * rlr - farHeight * rud;
-    //
-
-    glColor3f(1.0, 1.0, 1.0);
-    glBegin(GL_LINE_LOOP);
-    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
-    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
-    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
-    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
-    glEnd();
-    glBegin(GL_LINES);
-    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
-    glVertex3f(farClipTopLeft.x(), farClipTopLeft.y(), farClipTopLeft.z());
-    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
-    glVertex3f(farCilpTopRight.x(), farCilpTopRight.y(), farCilpTopRight.z());
-    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
-    glVertex3f(farClipBottomRight.x(), farClipBottomRight.y(), farClipBottomRight.z());
-    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
-    glVertex3f(farClipBottomLeft.x(), farClipBottomLeft.y(), farClipBottomLeft.z());
-    glEnd();
-}
-// */
 void draw_scene(bool viewVolume, bool view = true){
     glPushMatrix();
-    if(view)draw_floor();
-    if(viewVolume) draw_view_pyramid();
+    if(view)draw_floor(MAP_LENGTH);
+    if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
     draw_axes();
-    draw_tree();
-    draw_building();
-    draw_helicopter();
+    draw_tree(treePos, treeRotate, tree, TREE_NUM);
+    draw_building(buildingPos, buildingRotate, building, BUILDING_NUM);
+    draw_helicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(helicopterRotateX, helicopterRotateY, helicopterRotateZ), self_ang);
     glPopMatrix();
 }
+
 void view_direction(int x){
     switch(x){
         case 0:
@@ -462,18 +186,18 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(0);
-    draw_view();
+    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
     // Top Right Viewport
     glViewport(viewportWidth, height / 2, viewportWidth, viewportHeight);
     view_direction(2);
-    draw_scene(1, (helicopterY ) > ESP);
+    draw_scene(1, (helicopterY) > ESP);
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
-    draw_view();
+    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
 
@@ -485,7 +209,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(1);
-    draw_view();
+    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
@@ -496,7 +220,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(3);
-    draw_view();
+    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 }
 
@@ -522,7 +246,7 @@ void singleview_projection(){
     }
     if(viewPoint == 3) draw_scene(0, (lookAtY > ESP));
     else draw_scene(1);
-    draw_view();
+    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
 
 }
 void display(){
@@ -548,20 +272,7 @@ void reshap(int w, int h){
 
     display();
 }
-void move_camera_ud(float degree){
-    Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
-    Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f result = rotate_matrix(O, P, degree);
-    Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
 
-    Eigen::Vector3f tresult = result - O;
-    Eigen::Vector3f tv = Eigen::Vector3f(0, 1, 0);
-    float cos_theta = tresult.dot(tv) / (tresult.norm() * tv.norm());
-    float angle = acos(cos_theta) * 180.0 / PI;
-
-    if(angle < ESP || 180.0f - angle < ESP) return;
-    lookAtX = loc.x(); lookAtY = loc.y(); lookAtZ = loc.z();
-}
 
 void zoom(float len){
     float dis = sqrt((lookAtX - helicopterX) * (lookAtX - helicopterX) + (lookAtY - helicopterY) * (lookAtY - helicopterY) + (lookAtZ - helicopterZ) * (lookAtZ - helicopterZ));
@@ -575,40 +286,10 @@ void zoom(float len){
     lookAtZ = lookAtZ + dz * len;
 }
 
-void move_camera_lr(float degree){
-    //旋轉中心
-    float center_x = helicopterX,
-        center_z = helicopterZ;
-    //移回中心
-    float tox = lookAtX - center_x,
-        toz = lookAtZ - center_z;
 
-    degree = degree * PI / 180.0f;
-    //旋轉
-    float tx = tox * cos(degree) - toz * sin(degree),
-        tz = tox * sin(degree) + toz * cos(degree);
-    //移回
-    lookAtX = tx + center_x;
-    lookAtZ = tz + center_z;
-}
 
-void up_vector(){
-    Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
-    Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f l = P - O;
-    Eigen::Vector3f v(l.z(), 0, -l.x());
-    l = l / l.norm();
-    v = v / v.norm();
-    Eigen::Vector3f result = rotate_up(l, v, upDegree);
-    Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
-    upX = loc.x(); upY = loc.y(); upZ = loc.z();
-}
 
-void axis_distance(float len){
-    orthographicScale += len;
 
-    // std::cout << axisDis << " " << len << std::endl;
-}
 void update(){
     if(helicopterY > ESP)
         self_ang += bladeRotateSpeed;
@@ -718,16 +399,20 @@ void update(){
     //yghj
 // /*
     if(keyboardStates['y']){
-        move_camera_ud(1.0f);
+        Eigen::Vector3f res = move_camera_ud(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
+        lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
     }
     if(keyboardStates['h']){
-        move_camera_ud(-1.0f);
+        Eigen::Vector3f res = move_camera_ud(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
+        lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
     }
     if(keyboardStates['g']){
-        move_camera_lr(1.0f);
+        Eigen::Vector3f res = move_camera_lr(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
+        lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
     }
     if(keyboardStates['j']){
-        move_camera_lr(-1.0f);
+        Eigen::Vector3f res = move_camera_lr(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
+        lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
     }
     //*/
     //nb
@@ -747,13 +432,14 @@ void update(){
 
     }
     //fixed up vector  
-    up_vector();
+    Eigen::Vector3f tup = up_vector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
+    upX = tup.x(); upY = tup.y(); upZ = tup.z();
 
     if(keyboardStates['=']){
-        axis_distance(1.0f);
+        orthographicScale += 1.0f;
     }
     if(keyboardStates['-']){
-        axis_distance(-1.0f);
+        orthographicScale -= 1.0f;
     }
     display();
 }
