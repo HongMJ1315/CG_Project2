@@ -26,6 +26,8 @@
 
 #define PAR_LIGHT GL_LIGHT3
 
+#define FIXABLE_LIGHT GL_LIGHT4
+
 #define ESP 1e-6
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
@@ -38,7 +40,7 @@ bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
 
 enum material{
-    METAL, RUBBER, CEMENT, WOOD, TEST
+    METAL, RUBBER, CEMENT, WOOD, TEST, FLOOR
 }MATERIAL;
 
 void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
@@ -86,6 +88,14 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
         mat_specular[0] = 0.5f; mat_specular[1] = 0.5f; mat_specular[2] = 0.5f;
         mat_shininess[0] = 32.0f;
         break;
+
+        case FLOOR:
+        mat_ambient[0] = r; mat_ambient[1] = g; mat_ambient[2] = b;
+        mat_diffuse[0] = r; mat_diffuse[1] = g; mat_diffuse[2] = b;
+        mat_specular[0] = 0.0; mat_specular[1] = 0.0; mat_specular[2] = 0.0;
+        mat_shininess[0] = 0.0;
+
+
         default:
         break;
     }
@@ -95,7 +105,6 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
 }
-
 
 void sun_light(){
     // glEnable(SUN_LIGHT);
@@ -128,7 +137,7 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, bool isOn = tr
     glLightfv(HELICOPTER_LIGHT1, GL_DIFFUSE, lightDiffuse);
     glLightfv(HELICOPTER_LIGHT1, GL_SPECULAR, lightSpecular);
 
-    
+
     GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
     glLightfv(HELICOPTER_LIGHT1, GL_SPOT_DIRECTION, spot_direction);
     glLightf(HELICOPTER_LIGHT1, GL_SPOT_CUTOFF, 45.0);
@@ -144,10 +153,11 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, bool isOn = tr
     glLightf(HELICOPTER_LIGHT2, GL_SPOT_EXPONENT, 10.0);
 }
 
+
 void Cube(float r, float g, float b){
     for(int i = 0; i < 6; i++){
         glBegin(GL_POLYGON);
-        SetMaterial(TEST, r, g, b);
+        SetMaterial(METAL, r, g, b);
         for(int j = 0; j < 4; j++){
             glVertex3fv(points[face[i][j]]);
         }
@@ -163,7 +173,7 @@ void Blade(){
     glVertex3f(-1.0, 8.0, 0.0);
     glVertex3f(-1.0, 4.0, 0.0);
     glEnd();
-    SetMaterial(TEST, 1.0, 1.0, 1.0);
+    SetMaterial(METAL, 1.0, 1.0, 1.0);
 }
 
 Eigen::Matrix3f rotation_matrix(Eigen::Vector3f axis, double theta){
@@ -443,7 +453,7 @@ void draw_tree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, in
 
 void draw_building(std::pair<int, int> *buildingPos, float *buildingRotate, Model building, int building_num){
     for(int i = 0; i < building_num; i++){
-        glColor3f(0.5, 0.5, 0.5);
+        SetMaterial(CEMENT, 0.1, 0.1, 0.1);
         glPushMatrix();
         int tx = buildingPos[i].first;
         int tz = buildingPos[i].second;
@@ -476,7 +486,7 @@ void draw_par_light(Eigen::Vector3f loc, float rotate, Eigen::Vector3f color, Mo
     SetMaterial(METAL, 1, 1, 1);
     Cube(1, 1, 1);
     glPopMatrix();
-    float cutoff = 15.0;
+    float cutoff = 30.0;
     float exponent = 10.0;
     glLightfv(PAR_LIGHT, GL_POSITION, lightPosition);
     glLightfv(PAR_LIGHT, GL_AMBIENT, lightAmbient);
@@ -489,6 +499,31 @@ void draw_par_light(Eigen::Vector3f loc, float rotate, Eigen::Vector3f color, Mo
     glLightf(PAR_LIGHT, GL_SPOT_EXPONENT, exponent);
     glPopMatrix();
 }
+
+void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f color, float cutoff = 45.0){
+    glPushMatrix();
+    glTranslatef(loc.x(), loc.y(), loc.z());
+    float r = color.x();
+    float g = color.y();
+    float b = color.z();
+    GLfloat lightPosition[] = { 0, 0, 0, 1.0 };  // Light position (x, y, z, w)
+    GLfloat lightAmbient[] = { 0.2, 0.2, 0.2, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
+    GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
+    glLightfv(FIXABLE_LIGHT, GL_POSITION, lightPosition);
+    glLightfv(FIXABLE_LIGHT, GL_AMBIENT, lightAmbient);
+    glLightfv(FIXABLE_LIGHT, GL_DIFFUSE, lightDiffuse);
+    glLightfv(FIXABLE_LIGHT, GL_SPECULAR, lightSpecular);
+    Cube(1, 1, 1);
+
+    GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
+    glLightfv(FIXABLE_LIGHT, GL_SPOT_DIRECTION, spot_direction);
+    glLightf(FIXABLE_LIGHT, GL_SPOT_CUTOFF, cutoff);
+    glLightf(FIXABLE_LIGHT, GL_SPOT_EXPONENT, 10.0);
+
+    glPopMatrix();
+}
+
 
 
 // /*
@@ -581,16 +616,15 @@ void draw_view(Eigen::Vector3f helicopterLocation, float u[3][3]){
 
 void draw_floor(int len){
     int i, j;
-
     for(i = 0; i < len; i++)
         for(j = 0; j < len; j++){
             if((i + j) % 2 == 0){
                 // glColor3f(0.7, 0.7, 0.7);
-                SetMaterial(CEMENT);
+                SetMaterial(FLOOR, 0.7, 0.7, 0.7);
             }
             else{
                 // glColor3f(0.1, 0.1, 0.7);
-                SetMaterial(WOOD);
+                SetMaterial(FLOOR, 0.1, 0.1, 0.7);
             }
             glBegin(GL_POLYGON);
             glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
