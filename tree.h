@@ -119,7 +119,7 @@ void branch::drawSelf(float r, float g, float b){
     glRotatef(-B_theta, Cos(B_phi), Sin(B_phi), 0);
     // glRotatef(-B_theta, X_AXIS, Y_AXIS, 0);
 
-    glColor3f(r, g, b);
+    // glColor3f(r, g, b);
 
     gluCylinder(myCylinder, radius, radius * 0.8, length * 1.1, 20, 200);
     // gluQuadricNormals(myCylinder, GL_SMOOTH);
