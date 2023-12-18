@@ -17,6 +17,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <algorithm>
 #define WIDTH 600
 #define HEIGHT 600
 
@@ -64,11 +65,11 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
         mat_shininess[0] = 0.078125;
         break;
 
-        case CEMENT: // Cement
+        case CEMENT: // Wax-Coated Surface
         mat_ambient[0] = 0.8; mat_ambient[1] = 0.8; mat_ambient[2] = 0.8;
         mat_diffuse[0] = 0.8; mat_diffuse[1] = 0.8; mat_diffuse[2] = 0.8;
-        mat_specular[0] = 1.0; mat_specular[1] = 1.0; mat_specular[2] = 1.0;
-        mat_shininess[0] = 0.6;
+        mat_specular[0] = 0.5; mat_specular[1] = 0.5; mat_specular[2] = 0.5; // Adjusted for wax coating
+        mat_shininess[0] = 10.0; // Adjusted shininess
         break;
 
         case WOOD: // Wood
@@ -106,13 +107,14 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
 }
 
-void sun_light(){
+void draw_sun_light(Eigen::Vector3f color){
     // glEnable(SUN_LIGHT);
 
+    float r = color.x(), g = color.y(), b = color.z();
     GLfloat lightPosition[] = { 0.0, 100.0, 0.0, 1.0 };  // Light position (x, y, z, w)
     GLfloat lightAmbient[] = { 0.2, 0.2, 0.2, 1.0 };     // Ambient light color (RGBA)
-    GLfloat lightDiffuse[] = { 1.0, 1.0, 1.0, 1.0 };     // Diffuse light color (RGBA)
-    GLfloat lightSpecular[] = { 1.0, 1.0, 1.0, 1.0 };    // Specular light color (RGBA)
+    GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
+    GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
 
     glLightfv(SUN_LIGHT, GL_POSITION, lightPosition);
     glLightfv(SUN_LIGHT, GL_AMBIENT, lightAmbient);
@@ -120,7 +122,7 @@ void sun_light(){
     glLightfv(SUN_LIGHT, GL_SPECULAR, lightSpecular);
 }
 
-void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, bool isOn = true){
+void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
     float r = color.x();
@@ -140,7 +142,7 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, bool isOn = tr
 
     GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
     glLightfv(HELICOPTER_LIGHT1, GL_SPOT_DIRECTION, spot_direction);
-    glLightf(HELICOPTER_LIGHT1, GL_SPOT_CUTOFF, 45.0);
+    glLightf(HELICOPTER_LIGHT1, GL_SPOT_CUTOFF, cutoff);
     glLightf(HELICOPTER_LIGHT1, GL_SPOT_EXPONENT, 10.0);
 
     glLightfv(HELICOPTER_LIGHT2, GL_POSITION, lightPosition2);
@@ -149,7 +151,7 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, bool isOn = tr
     glLightfv(HELICOPTER_LIGHT2, GL_SPECULAR, lightSpecular);
 
     glLightfv(HELICOPTER_LIGHT2, GL_SPOT_DIRECTION, spot_direction);
-    glLightf(HELICOPTER_LIGHT2, GL_SPOT_CUTOFF, 45.0);
+    glLightf(HELICOPTER_LIGHT2, GL_SPOT_CUTOFF, cutoff);
     glLightf(HELICOPTER_LIGHT2, GL_SPOT_EXPONENT, 10.0);
 }
 
@@ -285,7 +287,7 @@ void Tire(float r, float g, float b){
     glPopMatrix();
 }
 
-void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, float self_ang){
+void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff){
     float helicopterX = helicopterLocation(0);
     float helicopterY = helicopterLocation(1);
     float helicopterZ = helicopterLocation(2);
@@ -302,7 +304,7 @@ void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicop
 
     // glScalef(10.0f, 10.0f, 10.0f);
 
-    helicopter_light(Eigen::Vector3f(1, 1, 1), lightDir);
+    helicopter_light(color, lightDir, cutoff);
 
 
     //Main body

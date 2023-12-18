@@ -1,6 +1,5 @@
 #include "main.h"
 
-
 #define MAP_LENGTH 50
 #define BUILDING_NUM 20
 #define TREE_NUM 3
@@ -21,9 +20,10 @@ float helicopterLightDirectionX = 0.0, helicopterLightDirectionY = -1, helicopte
 float fixableLightLocationX = -20, fixableLightLocationY = 0, fixableLightLocationZ = 10;
 float fixableLightDirectionX = 0, fixableLightDirectionY = 1, fixableLightDirectionZ = 0;
 // float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
-int sunLightColorIndex = 0, helicopterLightColorIndex = 0, fixableLightColorIndex = 0, parLightColorIndex = 0;
+int sunLightColorIndex = 6, helicopterLightColorIndex = 0, fixableLightColorIndex = 0, parLightColorIndex = 0;
 float upX = 0.0, upY = 1.0, upZ = 0.0;
 float fixableLightCutoff = 30.0f;
+float helicopterLightCutoff = 45.0f;
 float upDegree = 90.0;
 bool keyboardStates[256];
 bool directionKey[4];
@@ -156,18 +156,18 @@ void draw_scene(bool viewVolume, bool view = true){
     if(view)draw_floor(MAP_LENGTH);
     if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
     draw_axes();
-    sun_light();
+    draw_sun_light(lightColor[sunLightColorIndex]);
 
     draw_tree(treePos, treeRotate, tree, TREE_NUM);
     draw_building(buildingPos, buildingRotate, building, BUILDING_NUM);
     draw_helicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ),
         Eigen::Vector3f(helicopterRotateX, helicopterRotateY, helicopterRotateZ),
         Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
-        self_ang);
-    draw_par_light(Eigen::Vector3f(20, 0, 10), 0, Eigen::Vector3f(0.0f, 1.0f, 1.0f), parLight, parLightTest);
+        lightColor[helicopterLightColorIndex], self_ang, helicopterLightCutoff);
+    draw_par_light(Eigen::Vector3f(20, 0, 10), 0, lightColor[parLightColorIndex], parLight, parLightTest);
     draw_fixable_light(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
         Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
-        Eigen::Vector3f(1.0f, 1.0f, 1.0f), fixableLightCutoff);
+        lightColor[fixableLightColorIndex], fixableLightCutoff);
     glPopMatrix();
 }
 
@@ -330,27 +330,31 @@ void update(){
         if(keyboardStates['w']){
             Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
-            std::cout << tld.x() << " " << tld.y() << " " << tld.z() << std::endl;
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['s']){
             Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
-            std::cout << tld.x() << " " << tld.y() << " " << tld.z() << std::endl;
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['a']){
             Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(0, 1, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
-            std::cout << tld.x() << " " << tld.y() << " " << tld.z() << std::endl;
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['d']){
             Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(0, 1, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
-            std::cout << tld.x() << " " << tld.y() << " " << tld.z() << std::endl;
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
+        if(keyboardStates['b']){
+            helicopterLightCutoff += 1.0f;
+        }
+        if(keyboardStates['n']){
+            helicopterLightCutoff -= 1.0f;
+        }
+        helicopterLightCutoff = std::min(90.0f, helicopterLightCutoff);
+        helicopterLightCutoff = std::max(0.0f, helicopterLightCutoff);
     }
     else if(keyboardStates['x']){
         if(keyboardStates['w']){
@@ -404,6 +408,8 @@ void update(){
         if(keyboardStates['n']){
             fixableLightCutoff -= 1.0f;
         }
+        fixableLightCutoff = std::min(fixableLightCutoff, 90.0f);
+        fixableLightCutoff = std::max(fixableLightCutoff, 0.0f);
     }
     else if(keyboardStates['e']){
         if(keyboardStates['l']){
