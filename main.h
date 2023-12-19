@@ -3,6 +3,7 @@
 
 #include "load_model.h"
 #include "tree.h"
+#include "perlin.h"
 
 #include <math.h>
 #include <time.h>
@@ -43,6 +44,8 @@ float colors[6][3] = { {0.5, 0.5, 0.5}, {0.7, 0.7, 0.7}, {0.7, 0.5, 0.5}, {0.5, 
 
 bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
+
+void Cube(float, float, float);
 
 enum material{
     METAL, RUBBER, CEMENT, WOOD, TEST, FLOOR, WAX, CANDEL
@@ -112,7 +115,7 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
         // ambient 1.0f, 0.5f, 0.31f
         // diffuse 1.0f, 0.5f, 0.31f
         // specular 0.5f, 0.5f, 0.5f
-        // shininess 32.0f
+        // shiness 32.0f
         mat_ambient[0] = 1.0f; mat_ambient[1] = 0.5f; mat_ambient[2] = 0.31f;
         mat_diffuse[0] = 1.0f; mat_diffuse[1] = 0.5f; mat_diffuse[2] = 0.31f;
         mat_specular[0] = 0.5f; mat_specular[1] = 0.5f; mat_specular[2] = 0.5f;
@@ -132,18 +135,23 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
 
 void draw_sun_light(Eigen::Vector3f color){
     // glEnable(SUN_LIGHT);
-
+    glPushMatrix();
+    glTranslatef(225, 10, 225);
     float r = color.x(), g = color.y(), b = color.z();
-    GLfloat lightPosition[] = { 100.0, 100.0, 100.0, 1.0 };  // Light position (x, y, z, w)
-    GLfloat lightAmbient[] = { 0.2, 0.2, 0.2, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightPosition[] = { 0, 0, 0, 0.0 };  // Light position (x, y, z, w), w=0 for directional light
+    GLfloat lightAmbient[] = { r * 0.4, g * 0.4, b * 0.4, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
-    GLfloat lightDirection[] = { 0, -1.0, 0 };
+    GLfloat lightDirection[] = { 0, -1, 0 };  // Light direction for directional light
     glLightfv(SUN_LIGHT, GL_POSITION, lightPosition);
     glLightfv(SUN_LIGHT, GL_AMBIENT, lightAmbient);
     glLightfv(SUN_LIGHT, GL_DIFFUSE, lightDiffuse);
     glLightfv(SUN_LIGHT, GL_SPECULAR, lightSpecular);
     glLightfv(SUN_LIGHT, GL_SPOT_DIRECTION, lightDirection);
+
+    // glScalef(10, 10, 10);
+    // Cube(1, 1, 1);
+    glPopMatrix();
 }
 
 void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
@@ -155,6 +163,9 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
     r = std::min(r, 1.0f);
     g = std::min(g, 1.0f);
     b = std::min(b, 1.0f);
+    r = std::max(r, 0.0f);
+    g = std::max(g, 0.0f);
+    b = std::max(b, 0.0f);
     GLfloat lightPosition[] = { -0.5, 0.0, 0.0, 1.0 };  // Light position (x, y, z, w)
     GLfloat lightPosition2[] = { 0.5, 0.0, 0.0, 1.0 };  // Light position (x, y, z, w)
     GLfloat lightAmbient[] = { 0.2 * intensity, 0.2 * intensity, 0.2 * intensity, 1.0 };     // Ambient light color (RGBA)
@@ -324,6 +335,7 @@ void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicop
     float helicopterRotateX = helicopterRotate(0);
     float helicopterRotateY = helicopterRotate(1);
     float helicopterRotateZ = helicopterRotate(2);
+    // std::cout << helicopterX << " " << helicopterY << " " << helicopterZ << std::endl;
     glPushMatrix();
     glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
     glRotatef(-helicopterRotateY, 0.0f, 1.0f, 0.0f);
@@ -510,7 +522,7 @@ void draw_par_light(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Ve
     float b = color.z();
     GLfloat lightPosition[] = { 0, 0, 0, 1.0 };  // Light position (x, y, z, w)
     // GLfloat lightPosition[] = { loc.x() - 7.5, loc.y() + 7.5, loc.z(), 1.0 };  // Light position (x, y, z, w)
-    GLfloat lightAmbient[] = { 0.2, 0.2, 0.2, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { 0.2 * r, 0.2 * g, 0.2 * b, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
     glPushMatrix();
@@ -529,7 +541,7 @@ void draw_par_light(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Ve
     glLightfv(parLightID, GL_SPOT_DIRECTION, spot_direction);
     glLightf(parLightID, GL_SPOT_CUTOFF, cutoff);
     glLightf(parLightID, GL_SPOT_EXPONENT, exponent);
-    glLightf(parLightID, GL_CONSTANT_ATTENUATION, 2.5);
+    glLightf(parLightID, GL_CONSTANT_ATTENUATION, 1.5);
     glPopMatrix();
 }
 
@@ -542,8 +554,11 @@ void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3
     r = std::min(r, 1.0f);
     g = std::min(g, 1.0f);
     b = std::min(b, 1.0f);
+    r = std::max(r, 0.0f);
+    g = std::max(g, 0.0f);
+    b = std::max(b, 0.0f);
     GLfloat lightPosition[] = { 0, 0, 0, 1.0 };  // Light position (x, y, z, w)
-    GLfloat lightAmbient[] = { 0.2 * intensity, 0.2 * intensity, 0.2 * intensity, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { 0.2 * intensity * r, 0.2 * intensity * g, 0.2 * intensity * b, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
     glLightfv(FIXABLE_LIGHT, GL_POSITION, lightPosition);
@@ -560,10 +575,11 @@ void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3
     glPopMatrix();
 }
 
-void draw_candle(Eigen::Vector3f loc){
-    float r = 247.0 / 255;
-    float g = 91.0 / 255;
-    float b = 17.0 / 255;
+void draw_candle(Eigen::Vector3f loc, float instance){
+    // std::cout << instance << std::endl;
+    float r = (247.0 / 255) * instance;
+    float g = (91.0 / 255) * instance;
+    float b = (17.0 / 255) * instance;
 
     glPushMatrix();
     glScalef(5, 5, 5);
@@ -604,7 +620,7 @@ void draw_candle(Eigen::Vector3f loc){
     // glPopMatrix();
 
     GLfloat lightPosition[] = { 0, 0, 0, 1.0 };  // Light position (x, y, z, w)
-    GLfloat lightAmbient[] = { 0.2, 0.2, 0.2, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { 0.1 * r, 0.1 * g, 0.1 * b, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r / 4, g / 4, b / 4, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r / 4, g / 4, b / 4, 1.0 };    // Specular light color (RGBA)
     GLfloat lightDirection[] = { 0, 1, 0 };
@@ -613,6 +629,8 @@ void draw_candle(Eigen::Vector3f loc){
     glLightfv(CANDLE_LIGHT, GL_DIFFUSE, lightDiffuse);
     glLightfv(CANDLE_LIGHT, GL_SPECULAR, lightSpecular);
     glLightfv(CANDLE_LIGHT, GL_SPOT_DIRECTION, lightDirection);
+    glLightf(CANDLE_LIGHT, GL_SPOT_CUTOFF, 90.0);
+    glLightf(CANDLE_LIGHT, GL_SPOT_EXPONENT, 0.01);
     glLightf(CANDLE_LIGHT, GL_CONSTANT_ATTENUATION, 2.5);
     glPopMatrix();
 

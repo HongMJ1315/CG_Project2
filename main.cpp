@@ -15,29 +15,58 @@
 #define CLIP_DEGREE 60.0f
 int width = 600;
 int height = 600;
-float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
+
+// helicopter
 float helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
 float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+float upX = 0.0, upY = 1.0, upZ = 0.0;
+// float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
 float helicopterLightDirectionX = 0.0, helicopterLightDirectionY = -1, helicopterLightDirectionZ = 0;
 float helicopterLightInstance = 1.0;
+float helicopterLightCutoff = 45.0f;
+int helicopterLightColorIndex = 0;
+float upDegree = 90.0;
+float self_ang = 0.0;
+float bladeRotateSpeed = 0.5f;
+
+// light
 float fixableLightLocationX = -20, fixableLightLocationY = 0, fixableLightLocationZ = 10;
 float fixableLightDirectionX = 0, fixableLightDirectionY = 1, fixableLightDirectionZ = 0;
 float fixableLightInstance = 1.0;
-// float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
-int sunLightColorIndex = 6, helicopterLightColorIndex = 0, fixableLightColorIndex = 0;
-float upX = 0.0, upY = 1.0, upZ = 0.0;
 float fixableLightCutoff = 30.0f;
-float helicopterLightCutoff = 45.0f;
-float upDegree = 90.0;
+int fixableLightColorIndex = 0;
+bool fixableLightStatus = 1;
+
+// candle
+int cnadleLightIndex = 0;
+bool candleStatus = 1;
+float candleLightInstance[1000];
+
+// sun
+int sunLightColorIndex = 6;
+
+// par light
+int parLightArr[3] = { PAR_LIGHT0, PAR_LIGHT1, PAR_LIGHT2 };
+int parLightColorIndex[3] = { 0, 2, 4 };
+bool parLightStatus[3] = { 0, 0, 0 };
+bool parLightEnable = 1;
+bool parLightTest = 1;
+int parLightIndex = 0;
+
+// keyboard
 bool keyboardStates[256];
 bool directionKey[4];
 bool shiftKey = false;
-bool parLightTest = 1;
-int parLightArr[3] = { PAR_LIGHT0, PAR_LIGHT1, PAR_LIGHT2 };
-int parLightIndex = 0;
-int parLightColorIndex[3] = { 0, 2, 4 };
-bool parLightStatus[3] = { 0, 0, 0 };
+
+// display
 float orthographicScale = 10;
+float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 10.0f;
+float   u[3][3] = { {1.0,0.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0} };
+int viewPoint = 3;
+int viewMode = 0;
+
+// Model
 Model helicopterBody;
 Model helicopterBackTire;
 Model helicopterBackSupport;
@@ -45,13 +74,13 @@ Model helicopterLeftTire;
 Model helicopterRightTire;
 Model building;
 Model parLight;
-float self_ang = 0.0;
 std::pair<int, int> buildingPos[BUILDING_NUM];
 float buildingRotate[BUILDING_NUM];
 std::pair<int, int> treePos[TREE_NUM];
 float treeRotate[TREE_NUM];
 branch tree[TREE_NUM];
-float   u[3][3] = { {1.0,0.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0} };
+
+
 
 Eigen::Vector3f lightColor[] = {
     {1.0,0.0,0.0},
@@ -62,13 +91,8 @@ Eigen::Vector3f lightColor[] = {
     {1.0,0.0,1.0},
     {1.0,1.0,1.0}
 };
-
-float bladeRotateSpeed = 0.5f;
-float mapWidth = (MAP_LENGTH - 4.0f) * 10.0f, mapHeight = (MAP_LENGTH - 4.0f) * 10.0f;
-
 const float sq2 = sqrt(2.0) / 2.0;
-int viewPoint = 3;
-int viewMode = 0;
+
 
 
 
@@ -141,7 +165,8 @@ void init(){
     Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
         Eigen::Vector3f(1, 0, 0), 90.0f);
     helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
-
+    perlin p;
+    p.perlin_noise(candleLightInstance, 1000, time(NULL));
 }
 
 void reset_all(){
@@ -165,8 +190,7 @@ void reset_all(){
 
 void draw_scene(bool viewVolume, bool view = true){
     glPushMatrix();
-    if(view)draw_floor(MAP_LENGTH);
-    if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
+    draw_candle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
     draw_axes();
     draw_sun_light(lightColor[sunLightColorIndex]);
     SetMaterial(WOOD);
@@ -182,7 +206,8 @@ void draw_scene(bool viewVolume, bool view = true){
     draw_fixable_light(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
         Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
         lightColor[fixableLightColorIndex], fixableLightInstance, fixableLightCutoff);
-    draw_candle(Eigen::Vector3f(15, 15, 0));
+    if(view)draw_floor(MAP_LENGTH);
+    if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
     glPopMatrix();
 }
 
@@ -504,6 +529,7 @@ void update(){
         }
         helicopterLightCutoff = std::min(90.0f, helicopterLightCutoff);
         helicopterLightCutoff = std::max(0.0f, helicopterLightCutoff);
+        helicopterLightInstance = std::max(0.0f, helicopterLightInstance);
     }
     else if(keyboardStates['x']){
         if(keyboardStates['w']){
@@ -565,6 +591,7 @@ void update(){
         }
         fixableLightCutoff = std::min(fixableLightCutoff, 90.0f);
         fixableLightCutoff = std::max(fixableLightCutoff, 0.0f);
+        fixableLightInstance = std::max(fixableLightInstance, 0.0f);
     }
     else if(keyboardStates['e']){
         if(keyboardStates['l']){
@@ -595,7 +622,7 @@ void update(){
 }
 
 void keyboardDown(unsigned char key, int x, int y){
-    std::cout << char(key) << std::endl;
+    // std::cout << char(key) << std::endl;
     keyboardStates[key] = true;
     switch(key){
         case 'v':
@@ -644,9 +671,33 @@ void keyboardDown(unsigned char key, int x, int y){
         }
 
         case 'p':
-        parLightTest = !parLightTest;
+        parLightEnable = !parLightEnable;
         break;
 
+        case '[':{
+            if(candleStatus){
+                candleStatus = false;
+                glDisable(CANDLE_LIGHT);
+            }
+            else{
+                candleStatus = true;
+                glEnable(CANDLE_LIGHT);
+            }
+            break;
+        }
+
+        case ']':{
+            if(fixableLightStatus){
+                fixableLightStatus = false;
+                glDisable(FIXABLE_LIGHT);
+            }
+            else{
+                fixableLightStatus = true;
+                glEnable(FIXABLE_LIGHT);
+            }
+            break;
+        }
+                
         case '1':{
             sunLightColorIndex = (sunLightColorIndex + 1) % 7;
             break;
@@ -715,26 +766,32 @@ void specialUp(int key, int x, int y){
     }
 }
 
+void candleLightShinee(int v){
+    cnadleLightIndex = (cnadleLightIndex + 1) % 1000;
+    glutTimerFunc(100, candleLightShinee, 0);
+}
+
 void timeFunc(int value){
-    // for(int i = 0; i < 3; i++){
-    //     std::cout << parLightStatus[i] << " ";
-    // }
-    // std::cout << std::endl;
-    // for(int i = 0; i < 3; i++){
-    //     std::cout << parLightColorIndex[i] << " ";
-    // }
-    // std::cout << std::endl;
-    if(parLightStatus[parLightIndex]){
-        glDisable(parLightArr[parLightIndex]);
-        parLightColorIndex[parLightIndex] = (parLightColorIndex[parLightIndex] + 1) % 6;
-        parLightStatus[parLightIndex] = 0;
+    if(!parLightEnable){
+        glDisable(PAR_LIGHT0);
+        glDisable(PAR_LIGHT1);
+        glDisable(PAR_LIGHT2);
+        parLightStatus[0] = parLightStatus[1] = parLightStatus[2] = 0;
+
     }
     else{
-        glEnable(parLightArr[parLightIndex]);
-        parLightStatus[parLightIndex] = 1;
-    }
+        if(parLightStatus[parLightIndex]){
+            glDisable(parLightArr[parLightIndex]);
+            parLightColorIndex[parLightIndex] = (parLightColorIndex[parLightIndex] + 1) % 6;
+            parLightStatus[parLightIndex] = 0;
+        }
+        else{
+            glEnable(parLightArr[parLightIndex]);
+            parLightStatus[parLightIndex] = 1;
+        }
 
-    parLightIndex = (parLightIndex + 1) % 3;
+        parLightIndex = (parLightIndex + 1) % 3;
+    }
     glutTimerFunc(2000, timeFunc, 0);
 }
 int main(int argc, char **argv){
@@ -754,6 +811,7 @@ int main(int argc, char **argv){
     glutReshapeFunc(reshap);
     glutDisplayFunc(display);
     glutTimerFunc(2000, timeFunc, 0);
+    glutTimerFunc(100, candleLightShinee, 0);
     glutMainLoop();
     return 0;
 }
