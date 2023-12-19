@@ -139,7 +139,7 @@ void draw_sun_light(Eigen::Vector3f color){
     glTranslatef(225, 10, 225);
     float r = color.x(), g = color.y(), b = color.z();
     GLfloat lightPosition[] = { 0, 0, 0, 0.0 };  // Light position (x, y, z, w), w=0 for directional light
-    GLfloat lightAmbient[] = { r * 0.4, g * 0.4, b * 0.4, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { r * 0.7, g * 0.7, b * 0.7, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
     GLfloat lightDirection[] = { 0, -1, 0 };  // Light direction for directional light
@@ -168,7 +168,7 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
     b = std::max(b, 0.0f);
     GLfloat lightPosition[] = { -0.5, 0.0, 0.0, 1.0 };  // Light position (x, y, z, w)
     GLfloat lightPosition2[] = { 0.5, 0.0, 0.0, 1.0 };  // Light position (x, y, z, w)
-    GLfloat lightAmbient[] = { 0.2 * intensity, 0.2 * intensity, 0.2 * intensity, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { 0.2 * intensity * r, 0.2 * intensity * g, 0.2 * intensity * b, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
 
@@ -181,7 +181,8 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
     GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
     glLightfv(HELICOPTER_LIGHT1, GL_SPOT_DIRECTION, spot_direction);
     glLightf(HELICOPTER_LIGHT1, GL_SPOT_CUTOFF, cutoff);
-    glLightf(HELICOPTER_LIGHT1, GL_SPOT_EXPONENT, 10.0);
+    glLightf(HELICOPTER_LIGHT1, GL_SPOT_EXPONENT, 5.0);
+    glLightf(HELICOPTER_LIGHT1, GL_CONSTANT_ATTENUATION, 2.0);
 
     glLightfv(HELICOPTER_LIGHT2, GL_POSITION, lightPosition2);
     glLightfv(HELICOPTER_LIGHT2, GL_AMBIENT, lightAmbient);
@@ -190,7 +191,8 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
 
     glLightfv(HELICOPTER_LIGHT2, GL_SPOT_DIRECTION, spot_direction);
     glLightf(HELICOPTER_LIGHT2, GL_SPOT_CUTOFF, cutoff);
-    glLightf(HELICOPTER_LIGHT2, GL_SPOT_EXPONENT, 10.0);
+    glLightf(HELICOPTER_LIGHT2, GL_SPOT_EXPONENT, 5.0);
+    glLightf(HELICOPTER_LIGHT2, GL_CONSTANT_ATTENUATION, 2.0);
 }
 
 
@@ -531,7 +533,7 @@ void draw_par_light(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Ve
     Cube(1, 1, 1);
     glPopMatrix();
     float cutoff = 30.0;
-    float exponent = 10.0;
+    float exponent = 5.0;
     glLightfv(parLightID, GL_POSITION, lightPosition);
     glLightfv(parLightID, GL_AMBIENT, lightAmbient);
     glLightfv(parLightID, GL_DIFFUSE, lightDiffuse);
@@ -570,7 +572,7 @@ void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3
     GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
     glLightfv(FIXABLE_LIGHT, GL_SPOT_DIRECTION, spot_direction);
     glLightf(FIXABLE_LIGHT, GL_SPOT_CUTOFF, cutoff);
-    glLightf(FIXABLE_LIGHT, GL_SPOT_EXPONENT, 10.0);
+    glLightf(FIXABLE_LIGHT, GL_SPOT_EXPONENT, 5.0);
 
     glPopMatrix();
 }
@@ -629,8 +631,8 @@ void draw_candle(Eigen::Vector3f loc, float instance){
     glLightfv(CANDLE_LIGHT, GL_DIFFUSE, lightDiffuse);
     glLightfv(CANDLE_LIGHT, GL_SPECULAR, lightSpecular);
     glLightfv(CANDLE_LIGHT, GL_SPOT_DIRECTION, lightDirection);
-    glLightf(CANDLE_LIGHT, GL_SPOT_CUTOFF, 90.0);
-    glLightf(CANDLE_LIGHT, GL_SPOT_EXPONENT, 0.01);
+    glLightf(CANDLE_LIGHT, GL_SPOT_CUTOFF, 180.0);
+    glLightf(CANDLE_LIGHT, GL_SPOT_EXPONENT, 10.0);
     glLightf(CANDLE_LIGHT, GL_CONSTANT_ATTENUATION, 2.5);
     glPopMatrix();
 
