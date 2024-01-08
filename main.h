@@ -12,6 +12,8 @@
 #include <GL/freeglut.h>
 #include <GL/glext.h>
 #include <Eigen/Dense>
+#include <opencv2/opencv.hpp>
+
 
 #include <fstream>
 #include <iostream>
@@ -34,6 +36,9 @@
 
 #define CANDLE_LIGHT GL_LIGHT7
 
+
+#define TEXTURE_SIZE 256
+
 #define ESP 1e-6
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
@@ -41,6 +46,11 @@ GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
 float points[][3] = { {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1} };
 int face[][4] = { {0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5}, {4, 5, 6, 7}, {2, 3, 7, 6}, {0, 4, 7, 3} };
 float colors[6][3] = { {0.5, 0.5, 0.5}, {0.7, 0.7, 0.7}, {0.7, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, {0.5, 0.5, 0.7} };
+unsigned int textName[10];
+
+
+
+
 
 bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
@@ -50,6 +60,85 @@ void Cube(float, float, float);
 enum material{
     METAL, RUBBER, CEMENT, WOOD, TEST, FLOOR, WAX, CANDEL
 }MATERIAL;
+
+enum texture : int32_t{
+    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE
+}TEXTURE;
+
+void read_texture(unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], char *filename, int width = TEXTURE_SIZE, int height = TEXTURE_SIZE){
+    cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
+    if(img.empty()){
+        std::cout << "Could not read the image: " << filename << std::endl;
+        return;
+    }
+    cv::resize(img, img, cv::Size(width, height));
+
+    int index = 0;
+    for(int i = 0; i < img.rows; i++){
+        for(int j = 0; j < img.cols; j++){
+            cv::Vec3b color = img.at<cv::Vec3b>(cv::Point(j, i));
+            texture[i][j][0] = color[2];
+            texture[i][j][1] = color[1];
+            texture[i][j][2] = color[0];
+            texture[i][j][3] = 1.0;
+        }
+    }
+}
+
+
+void TextureInit(texture textType, unsigned int *textName, unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], int width, int height){
+    glBindTexture(GL_TEXTURE_2D, textName[textType]);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // GL_NEAREST = no smoothing
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+
+}
+
+void SetTexture(texture textType, unsigned int *textName){
+    float diffuse[] = { 0.8, 0.8, 0.8, 1.0 };
+    float specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    float ambient[] = { 1.0, 1.0, 1.0, 1.0 };
+    float emission[] = { 0.0, 0.0, 0.0, 1.0 };
+    float shininess = 0.0;
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, textName[textType]);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    switch(textType){
+        case METAL_TEXTURE:
+        shininess = 0.6;
+        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
+        break;
+
+        case WOOD_TEXTURE:
+        shininess = 0.6;
+        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
+        break;
+
+        case WOOD2_TEXTURE:
+        shininess = 0.6;
+        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
+        break;
+
+        case RUBBER_TEXTURE:
+        shininess = 0.078125;
+        break;
+
+        case CEMENT_TEXTURE:
+        shininess = 0.6;
+        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
+        break;
+
+        default:
+        break;
+    }
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+}
 
 void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
     GLfloat mat_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
@@ -62,7 +151,7 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
         case METAL: // Metal
         mat_ambient[0] = r; mat_ambient[1] = g; mat_ambient[2] = b;
         mat_diffuse[0] = r; mat_diffuse[1] = g; mat_diffuse[2] = b;
-        mat_specular[0] = 0.508273; mat_specular[1] = 0.508273; mat_specular[2] = 0.508273;
+        mat_specular[0] = 0.508273 * r; mat_specular[1] = 0.508273 * g; mat_specular[2] = 0.508273 * b;
         mat_shininess[0] = 64;
         break;
 
@@ -133,13 +222,13 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
 }
 
-void draw_sun_light(Eigen::Vector3f color){
+void draw_sun_light(Eigen::Vector3f color, float instance){
     // glEnable(SUN_LIGHT);
     glPushMatrix();
     glTranslatef(225, 10, 225);
     float r = color.x(), g = color.y(), b = color.z();
     GLfloat lightPosition[] = { 0, 0, 0, 0.0 };  // Light position (x, y, z, w), w=0 for directional light
-    GLfloat lightAmbient[] = { r * 0.7, g * 0.7, b * 0.7, 1.0 };     // Ambient light color (RGBA)
+    GLfloat lightAmbient[] = { r * 0.7 * instance, g * 0.7 * instance, b * 0.7 * instance, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
     GLfloat lightDirection[] = { 0, -1, 0 };  // Light direction for directional light
@@ -197,12 +286,18 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
 
 
 void Cube(float r, float g, float b){
+    // glScalef(1.0, 3.0, 1.0);
+    SetTexture(METAL_TEXTURE, textName);
     for(int i = 0; i < 6; i++){
         glBegin(GL_POLYGON);
-        SetMaterial(METAL, r, g, b);
-        for(int j = 0; j < 4; j++){
-            glVertex3fv(points[face[i][j]]);
-        }
+        glTexCoord2f(0.0, 0.0);
+        glVertex3fv(points[face[i][0]]);
+        glTexCoord2f(8.0, 0.0);
+        glVertex3fv(points[face[i][1]]);
+        glTexCoord2f(8.0, 8.0);
+        glVertex3fv(points[face[i][2]]);
+        glTexCoord2f(0.0, 8.0);
+        glVertex3fv(points[face[i][3]]);
         glEnd();
     }
 }
@@ -499,7 +594,8 @@ void draw_tree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, in
 
 void draw_building(std::pair<int, int> *buildingPos, float *buildingRotate, Model building, int building_num){
     for(int i = 0; i < building_num; i++){
-        SetMaterial(CEMENT, 0.1, 0.1, 0.1);
+        SetTexture(CEMENT_TEXTURE, textName);
+        // SetMaterial(CEMENT, 0.1, 0.1, 0.1);
         glPushMatrix();
         int tx = buildingPos[i].first;
         int tz = buildingPos[i].second;
@@ -508,6 +604,7 @@ void draw_building(std::pair<int, int> *buildingPos, float *buildingRotate, Mode
         glScaled(0.01, 0.01, 0.01);
         building.draw();
         glPopMatrix();
+
     }
 }
 
@@ -734,18 +831,25 @@ void draw_floor(int len){
         for(j = 0; j < len; j++){
             if((i + j) % 2 == 0){
                 // glColor3f(0.7, 0.7, 0.7);
-                SetMaterial(FLOOR, 0.7, 0.7, 0.7);
+                // SetMaterial(FLOOR, 0.7, 0.7, 0.7);
+                SetTexture(WOOD2_TEXTURE, textName);
             }
             else{
                 // glColor3f(0.1, 0.1, 0.7);
-                SetMaterial(FLOOR, 0.1, 0.1, 0.7);
+                // SetMaterial(FLOOR, 0.1, 0.1, 0.7);
+                SetTexture(WOOD_TEXTURE, textName);
             }
             glBegin(GL_POLYGON);
+            glTexCoord2f(0.0, 0.0);
             glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glTexCoord2f(1.0, 0.0);
             glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glTexCoord2f(1.0, 1.0);
             glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glTexCoord2f(0.0, 1.0);
             glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
             glEnd();
+
         }
 }
 

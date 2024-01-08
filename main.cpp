@@ -45,6 +45,7 @@ float candleLightInstance[1000];
 
 // sun
 int sunLightColorIndex = 6;
+float sunLightInstance = 1.0f;
 
 // par light
 int parLightArr[3] = { PAR_LIGHT0, PAR_LIGHT1, PAR_LIGHT2 };
@@ -80,6 +81,11 @@ std::pair<int, int> treePos[TREE_NUM];
 float treeRotate[TREE_NUM];
 branch tree[TREE_NUM];
 
+// Texture
+unsigned char wood[TEXTURE_SIZE][TEXTURE_SIZE][4];
+unsigned char metal[TEXTURE_SIZE][TEXTURE_SIZE][4];
+unsigned char wood2[TEXTURE_SIZE][TEXTURE_SIZE][4];
+unsigned char cement[TEXTURE_SIZE][TEXTURE_SIZE][4];
 
 
 Eigen::Vector3f lightColor[] = {
@@ -167,6 +173,23 @@ void init(){
     helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
     perlin p;
     p.perlin_noise(candleLightInstance, 1000, time(NULL));
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 10);
+    glGenTextures(10, textName);
+    read_texture(wood2, "../../texture/wood2.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD2_TEXTURE]);
+    TextureInit(WOOD2_TEXTURE, textName, wood2, 256, 256);
+    read_texture(cement, "../../texture/cement.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::CEMENT_TEXTURE]);
+    TextureInit(CEMENT_TEXTURE, textName, cement, 256, 256);
+    read_texture(wood, "../../texture/wood.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD_TEXTURE]);
+    TextureInit(WOOD_TEXTURE, textName, wood, 256, 256);
+    read_texture(metal, "../../texture/metal.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::METAL_TEXTURE]);
+    TextureInit(METAL_TEXTURE, textName, metal, 256, 256);
+
+
+
 }
 
 void reset_all(){
@@ -192,20 +215,20 @@ void draw_scene(bool viewVolume, bool view = true){
     glPushMatrix();
     draw_candle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
     draw_axes();
-    draw_sun_light(lightColor[sunLightColorIndex]);
-    SetMaterial(WOOD);
-    draw_tree(treePos, treeRotate, tree, TREE_NUM);
-    draw_building(buildingPos, buildingRotate, building, BUILDING_NUM);
+    draw_sun_light(lightColor[sunLightColorIndex], sunLightInstance);
+    draw_fixable_light(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
+        Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+        lightColor[fixableLightColorIndex], fixableLightInstance, fixableLightCutoff);
+    draw_par_light(PAR_LIGHT0, Eigen::Vector3f(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
+    draw_par_light(PAR_LIGHT1, Eigen::Vector3f(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
+    draw_par_light(PAR_LIGHT2, Eigen::Vector3f(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
     draw_helicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ),
         Eigen::Vector3f(helicopterRotateX, helicopterRotateY, helicopterRotateZ),
         Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
         lightColor[helicopterLightColorIndex], self_ang, helicopterLightCutoff, helicopterLightInstance);
-    draw_par_light(PAR_LIGHT0, Eigen::Vector3f(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
-    draw_par_light(PAR_LIGHT1, Eigen::Vector3f(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
-    draw_par_light(PAR_LIGHT2, Eigen::Vector3f(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
-    draw_fixable_light(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
-        Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
-        lightColor[fixableLightColorIndex], fixableLightInstance, fixableLightCutoff);
+    // SetMaterial(WOOD);
+    // draw_tree(treePos, treeRotate, tree, TREE_NUM);
+    draw_building(buildingPos, buildingRotate, building, BUILDING_NUM);
     if(view)draw_floor(MAP_LENGTH);
     if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
     glPopMatrix();
@@ -356,17 +379,13 @@ void zoom(float len){
     lookAtZ = lookAtZ + dz * len;
 }
 
-
-
-
-
 void update(){
     if(helicopterY > ESP)
         self_ang += bladeRotateSpeed;
     // std::cout << helicopterY << std::endl;
     if(self_ang >= 360.0)
         self_ang -= 360.0;
-    if(!keyboardStates['z'] && !keyboardStates['x']){
+    if(!keyboardStates['z'] && !keyboardStates['x'] && !keyboardStates['c']){
         if(keyboardStates['w']){
             if(helicopterRotateX < 45.0 && helicopterY > ESP){
                 helicopterRotateX += ROTATE_SPEED * 0.2;
@@ -607,16 +626,14 @@ void update(){
             keyboardStates['a'] = directionKey[2] = 0;
         }
     }
-    else{
-
+    else if(keyboardStates['c']){
+        if(keyboardStates['-']) sunLightInstance -= 0.1f;
+        else if(keyboardStates['=']) sunLightInstance += 0.1f;
     }
-
-    //nb
 
     //fixed up vector  
     Eigen::Vector3f tup = up_vector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
     upX = tup.x(); upY = tup.y(); upZ = tup.z();
-
 
     display();
 }
@@ -697,7 +714,7 @@ void keyboardDown(unsigned char key, int x, int y){
             }
             break;
         }
-                
+
         case '1':{
             sunLightColorIndex = (sunLightColorIndex + 1) % 7;
             break;
@@ -768,7 +785,7 @@ void specialUp(int key, int x, int y){
 
 void candleLightShinee(int v){
     cnadleLightIndex = (cnadleLightIndex + 1) % 1000;
-    glutTimerFunc(100, candleLightShinee, 0);
+    glutTimerFunc(50, candleLightShinee, 0);
 }
 
 void timeFunc(int value){

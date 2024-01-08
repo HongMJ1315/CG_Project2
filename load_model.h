@@ -255,7 +255,7 @@ public:
                 // glColor3f(r, g, b);
                 glBegin(GL_POLYGON);
                 for(int i = 0; i < face.edge; i++){
-
+                    glTexCoord2fv(texcoords[face.texcoords[i]]);
                     glVertex3fv(vertices[face.vertices[i]]);
                 }
                 glEnd();
