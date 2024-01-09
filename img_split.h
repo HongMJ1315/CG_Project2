@@ -21,6 +21,7 @@ public:
         int height = img.rows / vertical;
         for(int i = 0; i < vertical; i++){
             for(int j = 0; j < horizontal; j++){
+                std::cout << j * width << " " << i * height << " " << width << " " << height << std::endl;
                 cv::Mat dividedImage = img(cv::Rect(j * width, i * height, width, height));
                 dividedImages.push_back(dividedImage);
             }
