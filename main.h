@@ -4,7 +4,6 @@
 #include "load_model.h"
 #include "tree.h"
 #include "perlin.h"
-#include "img_split.h"
 
 #include <math.h>
 #include <time.h>
@@ -37,8 +36,6 @@
 
 #define CANDLE_LIGHT GL_LIGHT7
 
-#define BILLBOARD_NUM 20
-
 
 #define TEXTURE_SIZE 256
 #define BILLBOARD_SIZE 512
@@ -54,7 +51,7 @@ float colors[6][3] = { {0.5, 0.5, 0.5}, {0.7, 0.7, 0.7}, {0.7, 0.5, 0.5}, {0.5, 
 float mtx[16];
 float a[3], b[3];
 unsigned int textName[10];
-unsigned int billboardName[BILLBOARD_NUM];
+unsigned int billboardName[10];
 
 bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
@@ -70,9 +67,7 @@ enum texture : int32_t{
 }TEXTURE;
 
 enum billboard : int32_t{
-    TREE_BILLBOARD = 0, GRASS1_BILLBOARD = 1, GRASS2_BILLBOARD, FLOWER1_BILLBOARD, FLOWER2_BILLBOARD,
-    BIRD1_BILLBOARD, BIRD2_BILLBOARD, BIRD3_BILLBOARD, BIRD4_BILLBOARD, BIRD5_BILLBOARD, BIRD6_BILLBOARD,
-    BIRD7_BILLBOARD, BIRD8_BILLBOARD, BIRD9_BILLBOARD
+    TREE_BILLBOARD = 0, GRASS1_BILLBOARD = 1, GRASS2_BILLBOARD, FLOWER1_BILLBOARD, FLOWER2_BILLBOARD
 }BILLBOARD;
 
 void ComputeABAxes(){
@@ -608,10 +603,6 @@ void Tire(float r, float g, float b){
     glPopMatrix();
 }
 
-void DrawBird(Eigen::Vector3f loc, int animeFram, billboard billboardType){
-    DrawBillboard(loc(0), loc(1), loc(2), 30, 30, billboard(billboardType + animeFram), billboardName);
-}
-
 void DrawHelicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff, float intensity){
     float helicopterX = helicopterLocation(0);
     float helicopterY = helicopterLocation(1);
@@ -1028,18 +1019,6 @@ void DrawView(Eigen::Vector3f helicopterLocation, float u[3][3]){
     glVertex3f(x, y, z);
     glVertex3f(x + 20.0 * u[2][0], y + 20.0 * u[2][1], z + 20.0 * u[2][2]);
     glEnd();
-}
-
-void DrawFog(Eigen::Vector3f color){
-    // float fog_color[] = { 0.15, 0.20, 0.20, 0.50 };
-    color /= 4;
-    float fog_color[4] = { color.x(), color.y(), color.z(), 1.0 };
-    glEnable(GL_FOG);                /*enable fog fade */
-    glFogi(GL_FOG_MODE, GL_LINEAR);  /*fog factor=GL_LINEAR,GL_EXP,or GL_EXP2*/
-    glFogf(GL_FOG_DENSITY, 0.15);    /*fog opacity(density)= 0.25*/
-    glFogf(GL_FOG_START, 1.0);       /*Setup two ends for GL_LINEAR*/
-    glFogf(GL_FOG_END, 500.0);
-    glFogfv(GL_FOG_COLOR, fog_color);/*set the fog color */
 }
 
 void DrawFloor(int len){
