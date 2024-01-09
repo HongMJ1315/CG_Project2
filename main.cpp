@@ -70,6 +70,11 @@ float   u[3][3] = { {1.0,0.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0} };
 int viewPoint = 3;
 int viewMode = 0;
 
+// mirror
+unsigned char mirrorTexture[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4];
+float mirrorHeight = 128, mirrorWidth = 128;
+float mirrorX = 00, mirrorZ = 00;
+
 // Model
 Model helicopterBody;
 Model helicopterBackTire;
@@ -111,8 +116,7 @@ int birdFlyIndex = 0;
 Eigen::Vector3f birdFlyPos = { -20, 50, 100 };
 
 //Fog
-int fogColorIndex = 0;
-
+int fogColorIndex = 7;
 
 Eigen::Vector3f lightColor[] = {
     {1.0,0.0,0.0},
@@ -137,6 +141,7 @@ void init(){
     glEnable(GL_DEPTH_TEST);
     glClearDepth(1.0);
     glEnable(GL_LIGHTING);
+    // glEnable(GL_BLEND);
     // glEnable(GL_COLOR_MATERIAL);
     // Initialize lighting
     glEnable(SUN_LIGHT);
@@ -354,6 +359,7 @@ void draw_scene(bool viewVolume, bool view = true){
     DrawSkyBox(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ));
     DrawFog(lightColor[fogColorIndex]);
     DrawBird(birdFlyPos, birdFlyIndex, BIRD1_BILLBOARD);
+    // DrawMirror(Eigen::Vector3f(mirrorX, 0, mirrorZ), mirrorWidth, mirrorHeight, texture::MIRROR_TEXTURE);
     glPopMatrix();
 }
 
@@ -465,6 +471,34 @@ void singleview_projection(){
     DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
 
 }
+
+void GetFrameBuffer(unsigned char buffer[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4], Eigen::Vector3f comeraPos, Eigen::Vector3f cameraUp, float mirrorWidth, float mirrorHeight){
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    // 以cameraPos为视点，cameraUp为上方向，mirrorWidth和mirrorHeight为视口大小，相機位置为cameraPos，看向鏡子中心
+    gluPerspective(CLIP_DEGREE, (float) MIRROR_TEXTURE_SIZE / (float) MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE * 1000);
+    gluLookAt(comeraPos.x(), comeraPos.y(), comeraPos.z(), mirrorX, mirrorHeight / 2.0, mirrorZ, cameraUp.x(), cameraUp.y(), cameraUp.z());
+    draw_scene(0, (lookAtY > ESP));
+    glReadPixels(0, 0, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::MIRROR_TEXTURE]);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+}
+
+
+void MirrorFunc(){
+    Eigen::Vector3f newCamera = Eigen::Vector3f(lookAtX - (lookAtX - mirrorX) * 2.0f, lookAtY, lookAtZ - (lookAtZ - mirrorZ) * 2.0f);
+    // Eigen::Vector3f newCamera = Eigen::Vector3f(mirrorX - (lookAtX - mirrorX), lookAtY, lookAtZ);
+    std::cout << newCamera.x() << " " << newCamera.y() << " " << newCamera.z() << std::endl;
+
+    Eigen::Vector3f newCameraUp = Eigen::Vector3f(upX, upY, upZ);
+    GetFrameBuffer(mirrorTexture, newCamera, newCameraUp, mirrorWidth, mirrorHeight);
+}
+
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
@@ -480,6 +514,7 @@ void display(){
         break;
     }
     glutSwapBuffers();
+    // MirrorFunc();
 }
 
 void reshap(int w, int h){

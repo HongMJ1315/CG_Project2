@@ -43,8 +43,10 @@
 #define TEXTURE_SIZE 256
 #define BILLBOARD_SIZE 512
 #define ESP 1e-6
+#define MIRROR_TEXTURE_SIZE 128
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
+
 
 float points[][3] = { {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1} };
 int face[][4] = { {0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5}, {4, 5, 6, 7}, {2, 3, 7, 6}, {0, 4, 7, 3} };
@@ -64,7 +66,7 @@ enum material{
 }MATERIAL;
 
 enum texture : int32_t{
-    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE, EARTH_TEXTURE, SKY_TEXTURE
+    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE, EARTH_TEXTURE, SKY_TEXTURE, MIRROR_TEXTURE
 }TEXTURE;
 
 enum billboard : int32_t{
@@ -156,7 +158,6 @@ void TextureInit(texture textType, unsigned int *textName, unsigned char texture
 }
 
 void BillboardInit(billboard billboardType, unsigned int *billboardName, unsigned char texture[BILLBOARD_SIZE][BILLBOARD_SIZE][4], int width, int height){
-    std::cout << billboardType << std::endl;
     glBindTexture(GL_TEXTURE_2D, billboardName[billboardType]);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -384,6 +385,23 @@ void DrawSunLight(Eigen::Vector3f color, float instance){
     glPopMatrix();
 }
 
+// void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textureType){
+//     glPushMatrix();
+//     glTranslatef(mirrorLoc.x(), mirrorLoc.y(), mirrorLoc.z());
+//     glScalef(width, height, 1);
+//     SetTexture(textureType, textName);
+//     glBegin(GL_POLYGON);
+//     glTexCoord2f(0.0, 0.0);
+//     glVertex3f(-0.5, 0, 0.0);
+//     glTexCoord2f(1.0, 0.0);
+//     glVertex3f(0.5, 0, 0.0);
+//     glTexCoord2f(1.0, 1.0);
+//     glVertex3f(0.5, 1, 0.0);
+//     glTexCoord2f(0.0, 1.0);
+//     glVertex3f(-0.5, 1, 0.0);
+//     glEnd();
+//     glPopMatrix();
+// }
 void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
