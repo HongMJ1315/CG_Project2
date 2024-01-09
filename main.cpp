@@ -132,6 +132,7 @@ Eigen::Vector3f lightColor[] = {
 };
 const float sq2 = sqrt(2.0) / 2.0;
 
+unsigned char tmp[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 
 
 
@@ -143,6 +144,7 @@ void init(){
     glEnable(GL_DEPTH_TEST);
     glClearDepth(1.0);
     glEnable(GL_LIGHTING);
+    // glEnable(GL_BLEND);
     // glEnable(GL_COLOR_MATERIAL);
     // Initialize lighting
     glEnable(SUN_LIGHT);
@@ -240,7 +242,7 @@ void init(){
     p.perlin_noise(candleLightInstance, 1000, time(NULL));
     glPixelStorei(GL_UNPACK_ALIGNMENT, 10);
     glGenTextures(10, textName);
-    glGenTextures(10, billboardName);
+    glGenTextures(BILLBOARD_NUM, billboardName);
 
     ReadTexture(wood2, "../../texture/wood2.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD2_TEXTURE]);
@@ -286,10 +288,31 @@ void init(){
     glBindTexture(GL_TEXTURE_2D, textName[texture::SKY_TEXTURE]);
     TextureInit(SKY_TEXTURE, textName, sky, 256, 256);
 
-
-
-
-
+    ImageDivider imgDivider("../../billboard/bird1.png");
+    std::vector<cv::Mat> dividedImages = imgDivider.divide(3, 3);
+    for(int i = 0; i < 9; i++){
+        cv::Mat tmpMat = dividedImages[i];
+        for(int j = 0; j < tmpMat.rows; j++){
+            for(int k = 0; k < tmpMat.cols; k++){
+                cv::Vec4b color = tmpMat.at<cv::Vec4b>(cv::Point(k, j));
+                bird1[i][j][k][0] = color[2];
+                bird1[i][j][k][1] = color[1];
+                bird1[i][j][k][2] = color[0];
+                bird1[i][j][k][3] = color[3];
+            }
+        }
+        for(int j = 0; j < tmpMat.rows / 2; j++){
+            for(int k = 0; k < tmpMat.cols; k++){
+                std::swap(bird1[i][j][k][0], bird1[i][tmpMat.rows - j - 1][k][0]);
+                std::swap(bird1[i][j][k][1], bird1[i][tmpMat.rows - j - 1][k][1]);
+                std::swap(bird1[i][j][k][2], bird1[i][tmpMat.rows - j - 1][k][2]);
+                std::swap(bird1[i][j][k][3], bird1[i][tmpMat.rows - j - 1][k][3]);
+            }
+        }
+        std::string filename = "img" + std::to_string(i) + ".png";
+        cv::imwrite(filename, tmpMat);
+        BillboardInit(billboard(BIRD1_BILLBOARD + i), billboardName, bird1[i], 512, 512);
+    }
 }
 
 void reset_all(){
@@ -962,12 +985,12 @@ void specialUp(int key, int x, int y){
     }
 }
 
-void candleLightShinee(int v){
+void CandleLightShinee(int v){
     cnadleLightIndex = (cnadleLightIndex + 1) % 1000;
-    glutTimerFunc(50, candleLightShinee, 0);
+    glutTimerFunc(50, CandleLightShinee, 0);
 }
 
-void timeFunc(int value){
+void ParLightTimeFunc(int value){
     if(!parLightEnable){
         glDisable(PAR_LIGHT0);
         glDisable(PAR_LIGHT1);
@@ -988,7 +1011,16 @@ void timeFunc(int value){
 
         parLightIndex = (parLightIndex + 1) % 3;
     }
-    glutTimerFunc(2000, timeFunc, 0);
+    glutTimerFunc(2000, ParLightTimeFunc, 0);
+}
+
+void BirdFlyAnimation(int value){
+    birdFlyIndex = (birdFlyIndex + 1) % 9;
+    birdFlyPos.x() += 1.5f;
+    if(birdFlyPos.x() > 500.0f){
+        birdFlyPos.x() = -100.0f;
+    }
+    glutTimerFunc(50, BirdFlyAnimation, 0);
 }
 int main(int argc, char **argv){
     glutInit(&argc, argv);
@@ -1006,8 +1038,9 @@ int main(int argc, char **argv){
     glutSpecialUpFunc(specialUp);
     glutReshapeFunc(reshap);
     glutDisplayFunc(display);
-    glutTimerFunc(2000, timeFunc, 0);
-    glutTimerFunc(100, candleLightShinee, 0);
+    glutTimerFunc(2000, ParLightTimeFunc, 0);
+    glutTimerFunc(100, CandleLightShinee, 0);
+    glutTimerFunc(100, BirdFlyAnimation, 0);
     glutMainLoop();
     return 0;
 }
