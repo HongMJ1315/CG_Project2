@@ -20,8 +20,8 @@ int width = 600;
 int height = 600;
 
 // helicopter
-float helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
-float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ - 100;
+float helicopterX = 0, helicopterY = 20.0, helicopterZ = 100.0;
+float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
 float upX = 0.0, upY = 1.0, upZ = 0.0;
 // float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
 float helicopterRotateX = 0.0, helicopterRotateY = 180, helicopterRotateZ = 0.0;
@@ -70,6 +70,11 @@ float   u[3][3] = { {1.0,0.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0} };
 int viewPoint = 3;
 int viewMode = 0;
 
+// mirror
+unsigned char mirrorTexture[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4];
+float mirrorHeight = MIRROR_TEXTURE_SIZE, mirrorWidth = MIRROR_TEXTURE_SIZE;
+float mirrorX = 0, mirrorZ = 0;
+
 // Model
 Model helicopterBody;
 Model helicopterBackTire;
@@ -111,8 +116,10 @@ int birdFlyIndex = 0;
 Eigen::Vector3f birdFlyPos = { -20, 50, 100 };
 
 //Fog
-int fogColorIndex = 0;
+int fogColorIndex = 6;
+bool showFog = 1;
 
+bool demoMirror = 0;
 
 Eigen::Vector3f lightColor[] = {
     {1.0,0.0,0.0},
@@ -125,6 +132,7 @@ Eigen::Vector3f lightColor[] = {
 };
 const float sq2 = sqrt(2.0) / 2.0;
 
+unsigned char tmp[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 
 
 
@@ -136,12 +144,14 @@ void init(){
     glEnable(GL_DEPTH_TEST);
     glClearDepth(1.0);
     glEnable(GL_LIGHTING);
+    // glEnable(GL_BLEND);
     // glEnable(GL_COLOR_MATERIAL);
     // Initialize lighting
     glEnable(SUN_LIGHT);
     glEnable(HELICOPTER_LIGHT1);
     glEnable(HELICOPTER_LIGHT2);
     glEnable(FIXABLE_LIGHT);
+    glEnable(GL_FOG);
     glEnable(CANDLE_LIGHT);
     // glEnable(PAR_LIGHT0);
     // glEnable(PAR_LIGHT1);
@@ -232,7 +242,7 @@ void init(){
     p.perlin_noise(candleLightInstance, 1000, time(NULL));
     glPixelStorei(GL_UNPACK_ALIGNMENT, 10);
     glGenTextures(10, textName);
-    glGenTextures(10, billboardName);
+    glGenTextures(BILLBOARD_NUM, billboardName);
 
     ReadTexture(wood2, "../../texture/wood2.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD2_TEXTURE]);
@@ -278,10 +288,31 @@ void init(){
     glBindTexture(GL_TEXTURE_2D, textName[texture::SKY_TEXTURE]);
     TextureInit(SKY_TEXTURE, textName, sky, 256, 256);
 
-
-
-
-
+    ImageDivider imgDivider("../../billboard/bird1.png");
+    std::vector<cv::Mat> dividedImages = imgDivider.divide(3, 3);
+    for(int i = 0; i < 9; i++){
+        cv::Mat tmpMat = dividedImages[i];
+        for(int j = 0; j < tmpMat.rows; j++){
+            for(int k = 0; k < tmpMat.cols; k++){
+                cv::Vec4b color = tmpMat.at<cv::Vec4b>(cv::Point(k, j));
+                bird1[i][j][k][0] = color[2];
+                bird1[i][j][k][1] = color[1];
+                bird1[i][j][k][2] = color[0];
+                bird1[i][j][k][3] = color[3];
+            }
+        }
+        for(int j = 0; j < tmpMat.rows / 2; j++){
+            for(int k = 0; k < tmpMat.cols; k++){
+                std::swap(bird1[i][j][k][0], bird1[i][tmpMat.rows - j - 1][k][0]);
+                std::swap(bird1[i][j][k][1], bird1[i][tmpMat.rows - j - 1][k][1]);
+                std::swap(bird1[i][j][k][2], bird1[i][tmpMat.rows - j - 1][k][2]);
+                std::swap(bird1[i][j][k][3], bird1[i][tmpMat.rows - j - 1][k][3]);
+            }
+        }
+        std::string filename = "img" + std::to_string(i) + ".png";
+        cv::imwrite(filename, tmpMat);
+        BillboardInit(billboard(BIRD1_BILLBOARD + i), billboardName, bird1[i], 512, 512);
+    }
 }
 
 void reset_all(){
@@ -303,7 +334,7 @@ void reset_all(){
 
 }
 
-void draw_scene(bool viewVolume, bool view = true){
+void draw_scene(bool viewVolume, bool view = true, bool mirror = true){
     glPushMatrix();
     DrawCandle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
     DrawAxes();
@@ -329,9 +360,10 @@ void draw_scene(bool viewVolume, bool view = true){
     DrawBuilding(buildingPos, buildingRotate, building, BUILDING_NUM);
     if(view)DrawFloor(MAP_LENGTH);
     if(viewVolume) DrawViewVolume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
-    DrawSkyBox(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ));
-    DrawFog(lightColor[fogColorIndex]);
+    if(!viewVolume) DrawSkyBox(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ));
+    if(mirror) DrawFog(lightColor[fogColorIndex]);
     DrawBird(birdFlyPos, birdFlyIndex, BIRD1_BILLBOARD);
+    if(mirror) DrawMirror(Eigen::Vector3f(mirrorX, 0, mirrorZ), mirrorWidth, mirrorHeight, texture::MIRROR_TEXTURE);
     glPopMatrix();
 }
 
@@ -443,6 +475,50 @@ void singleview_projection(){
     DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
 
 }
+
+void GetFrameBuffer(unsigned char buffer[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4], Eigen::Vector3f cameraPos, Eigen::Vector3f cameraUp, float mirrorWidth, float mirrorHeight){
+    // std::cout << comeraPos.x() << " " << comeraPos.y() << " " << comeraPos.z() << std::endl;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    // 以cameraPos为视点，cameraUp为上方向，mirrorWidth和mirrorHeight为视口大小，相機位置为cameraPos，看向鏡子中心
+    gluPerspective(CLIP_DEGREE, MIRROR_TEXTURE_SIZE / MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE * (FAR_CLIP / NEAR_CLIP));
+    gluLookAt(cameraPos.x(), cameraPos.y(), cameraPos.z(), mirrorX, mirrorHeight / 2, mirrorZ, cameraUp.x(), cameraUp.y(), cameraUp.z());
+    draw_scene(0, (lookAtY > ESP), 0);
+    glReadPixels(0, 0, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    // for(int i = 0; i < MIRROR_TEXTURE_SIZE / 2; i++){
+    //     for(int j = 0; j < MIRROR_TEXTURE_SIZE; j++){
+    //         std::swap(buffer[i][j][0], buffer[MIRROR_TEXTURE_SIZE - i - 1][j][0]);
+    //         std::swap(buffer[i][j][1], buffer[MIRROR_TEXTURE_SIZE - i - 1][j][1]);
+    //         std::swap(buffer[i][j][2], buffer[MIRROR_TEXTURE_SIZE - i - 1][j][2]);
+    //         std::swap(buffer[i][j][3], buffer[MIRROR_TEXTURE_SIZE - i - 1][j][3]);
+    //     }
+    // }
+    for(int i = 0; i < MIRROR_TEXTURE_SIZE; i++){
+        for(int j = 0; j < MIRROR_TEXTURE_SIZE / 2; j++){
+            std::swap(buffer[i][j][0], buffer[i][MIRROR_TEXTURE_SIZE - j - 1][0]);
+            std::swap(buffer[i][j][1], buffer[i][MIRROR_TEXTURE_SIZE - j - 1][1]);
+            std::swap(buffer[i][j][2], buffer[i][MIRROR_TEXTURE_SIZE - j - 1][2]);
+            std::swap(buffer[i][j][3], buffer[i][MIRROR_TEXTURE_SIZE - j - 1][3]);
+        }
+    }
+    glBindTexture(GL_TEXTURE_2D, textName[texture::MIRROR_TEXTURE]);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+}
+
+
+void MirrorFunc(){
+    // Eigen::Vector3f newCamera = Eigen::Vector3f(lookAtX, lookAtY, lookAtZ - (lookAtZ - mirrorZ) * 2.0f);
+    Eigen::Vector3f newCamera = Eigen::Vector3f(-lookAtX, lookAtY, -lookAtZ);
+
+    Eigen::Vector3f newCameraUp = Eigen::Vector3f(0, 1, 0);
+    GetFrameBuffer(mirrorTexture, newCamera, newCameraUp, mirrorWidth, mirrorHeight);
+}
+
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
@@ -458,6 +534,7 @@ void display(){
         break;
     }
     glutSwapBuffers();
+    MirrorFunc();
 }
 
 void reshap(int w, int h){
@@ -736,7 +813,6 @@ void update(){
     //fixed up vector  
     Eigen::Vector3f tup = UpVector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
     upX = tup.x(); upY = tup.y(); upZ = tup.z();
-
     display();
 }
 
@@ -829,11 +905,35 @@ void keyboardDown(unsigned char key, int x, int y){
             fixableLightColorIndex = (fixableLightColorIndex + 1) % 7;
             break;
         }
-                // case '4':{
-                //     parLightColorIndex = (parLightColorIndex + 1) % 7;
-                //     break;
-                // }
+        case '4':{
+            fogColorIndex = (fogColorIndex + 1) % 7;
+            break;
+        }
+        case '5':{
+            showFog = !showFog;
+            if(showFog){
+                glEnable(GL_FOG);
+            }
+            else{
+                glDisable(GL_FOG);
+            }
+            break;
+        }
+        case '8':{
+            helicopterZ = 200;
+            lookAtZ = helicopterZ - 100;
+            glutReshapeWindow(600, 600);
 
+            break;
+        }
+        case '9':{
+            //強制更新螢幕視窗大小成MIRROR_TEXTURE_SIZE
+            helicopterX = 0;
+            lookAtX = 0;
+            helicopterZ = 100;
+            lookAtZ = helicopterZ + 100;
+            glutReshapeWindow(MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE);
+        }
         default:
         break;
     }
@@ -885,12 +985,12 @@ void specialUp(int key, int x, int y){
     }
 }
 
-void candleLightShinee(int v){
+void CandleLightShinee(int v){
     cnadleLightIndex = (cnadleLightIndex + 1) % 1000;
-    glutTimerFunc(50, candleLightShinee, 0);
+    glutTimerFunc(50, CandleLightShinee, 0);
 }
 
-void timeFunc(int value){
+void ParLightTimeFunc(int value){
     if(!parLightEnable){
         glDisable(PAR_LIGHT0);
         glDisable(PAR_LIGHT1);
@@ -911,7 +1011,16 @@ void timeFunc(int value){
 
         parLightIndex = (parLightIndex + 1) % 3;
     }
-    glutTimerFunc(2000, timeFunc, 0);
+    glutTimerFunc(2000, ParLightTimeFunc, 0);
+}
+
+void BirdFlyAnimation(int value){
+    birdFlyIndex = (birdFlyIndex + 1) % 9;
+    birdFlyPos.x() += 1.5f;
+    if(birdFlyPos.x() > 500.0f){
+        birdFlyPos.x() = -100.0f;
+    }
+    glutTimerFunc(50, BirdFlyAnimation, 0);
 }
 int main(int argc, char **argv){
     glutInit(&argc, argv);
@@ -929,8 +1038,9 @@ int main(int argc, char **argv){
     glutSpecialUpFunc(specialUp);
     glutReshapeFunc(reshap);
     glutDisplayFunc(display);
-    glutTimerFunc(2000, timeFunc, 0);
-    glutTimerFunc(100, candleLightShinee, 0);
+    glutTimerFunc(2000, ParLightTimeFunc, 0);
+    glutTimerFunc(100, CandleLightShinee, 0);
+    glutTimerFunc(100, BirdFlyAnimation, 0);
     glutMainLoop();
     return 0;
 }

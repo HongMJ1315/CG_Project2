@@ -4,6 +4,7 @@
 #include "load_model.h"
 #include "tree.h"
 #include "perlin.h"
+#include "img_split.h"
 
 #include <math.h>
 #include <time.h>
@@ -36,12 +37,16 @@
 
 #define CANDLE_LIGHT GL_LIGHT7
 
+#define BILLBOARD_NUM 20
+
 
 #define TEXTURE_SIZE 256
 #define BILLBOARD_SIZE 512
 #define ESP 1e-6
+#define MIRROR_TEXTURE_SIZE 256
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
+
 
 float points[][3] = { {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1} };
 int face[][4] = { {0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5}, {4, 5, 6, 7}, {2, 3, 7, 6}, {0, 4, 7, 3} };
@@ -49,7 +54,7 @@ float colors[6][3] = { {0.5, 0.5, 0.5}, {0.7, 0.7, 0.7}, {0.7, 0.5, 0.5}, {0.5, 
 float mtx[16];
 float a[3], b[3];
 unsigned int textName[10];
-unsigned int billboardName[10];
+unsigned int billboardName[BILLBOARD_NUM];
 
 bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
@@ -61,11 +66,13 @@ enum material{
 }MATERIAL;
 
 enum texture : int32_t{
-    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE, EARTH_TEXTURE, SKY_TEXTURE
+    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE, EARTH_TEXTURE, SKY_TEXTURE, MIRROR_TEXTURE
 }TEXTURE;
 
 enum billboard : int32_t{
-    TREE_BILLBOARD = 0, GRASS1_BILLBOARD = 1, GRASS2_BILLBOARD, FLOWER1_BILLBOARD, FLOWER2_BILLBOARD
+    TREE_BILLBOARD = 0, GRASS1_BILLBOARD = 1, GRASS2_BILLBOARD, FLOWER1_BILLBOARD, FLOWER2_BILLBOARD,
+    BIRD1_BILLBOARD, BIRD2_BILLBOARD, BIRD3_BILLBOARD, BIRD4_BILLBOARD, BIRD5_BILLBOARD, BIRD6_BILLBOARD,
+    BIRD7_BILLBOARD, BIRD8_BILLBOARD, BIRD9_BILLBOARD
 }BILLBOARD;
 
 void ComputeABAxes(){
@@ -151,7 +158,6 @@ void TextureInit(texture textType, unsigned int *textName, unsigned char texture
 }
 
 void BillboardInit(billboard billboardType, unsigned int *billboardName, unsigned char texture[BILLBOARD_SIZE][BILLBOARD_SIZE][4], int width, int height){
-    std::cout << billboardType << std::endl;
     glBindTexture(GL_TEXTURE_2D, billboardName[billboardType]);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -379,6 +385,23 @@ void DrawSunLight(Eigen::Vector3f color, float instance){
     glPopMatrix();
 }
 
+void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textureType){
+    glPushMatrix();
+    glTranslatef(mirrorLoc.x(), mirrorLoc.y(), mirrorLoc.z());
+    glScalef(width, height, 1);
+    SetTexture(textureType, textName);
+    glBegin(GL_POLYGON);
+    glTexCoord2f(0.0, 0.0);
+    glVertex3f(-0.5, 0, 0.0);
+    glTexCoord2f(1.0, 0.0);
+    glVertex3f(0.5, 0, 0.0);
+    glTexCoord2f(1.0, 1.0);
+    glVertex3f(0.5, 1, 0.0);
+    glTexCoord2f(0.0, 1.0);
+    glVertex3f(-0.5, 1, 0.0);
+    glEnd();
+    glPopMatrix();
+}
 void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
@@ -583,6 +606,10 @@ void Tire(float r, float g, float b){
         24,   /* divided into 18 segments */
         12);  /* 12 rings */
     glPopMatrix();
+}
+
+void DrawBird(Eigen::Vector3f loc, int animeFram, billboard billboardType){
+    DrawBillboard(loc(0), loc(1), loc(2), 30, 30, billboard(billboardType + animeFram), billboardName);
 }
 
 void DrawHelicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff, float intensity){
@@ -1001,6 +1028,17 @@ void DrawView(Eigen::Vector3f helicopterLocation, float u[3][3]){
     glVertex3f(x, y, z);
     glVertex3f(x + 20.0 * u[2][0], y + 20.0 * u[2][1], z + 20.0 * u[2][2]);
     glEnd();
+}
+
+void DrawFog(Eigen::Vector3f color){
+    // float fog_color[] = { 0.15, 0.20, 0.20, 0.50 };
+    color /= 4;
+    float fog_color[4] = { color.x(), color.y(), color.z(), 1.0 };
+    glFogi(GL_FOG_MODE, GL_LINEAR);  /*fog factor=GL_LINEAR,GL_EXP,or GL_EXP2*/
+    glFogf(GL_FOG_DENSITY, 0.15);    /*fog opacity(density)= 0.25*/
+    glFogf(GL_FOG_START, 1.0);       /*Setup two ends for GL_LINEAR*/
+    glFogf(GL_FOG_END, 500.0);
+    glFogfv(GL_FOG_COLOR, fog_color);/*set the fog color */
 }
 
 void DrawFloor(int len){
