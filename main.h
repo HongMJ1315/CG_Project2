@@ -43,7 +43,7 @@
 #define TEXTURE_SIZE 256
 #define BILLBOARD_SIZE 512
 #define ESP 1e-6
-#define MIRROR_TEXTURE_SIZE 128
+#define MIRROR_TEXTURE_SIZE 256
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
 
@@ -385,23 +385,23 @@ void DrawSunLight(Eigen::Vector3f color, float instance){
     glPopMatrix();
 }
 
-// void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textureType){
-//     glPushMatrix();
-//     glTranslatef(mirrorLoc.x(), mirrorLoc.y(), mirrorLoc.z());
-//     glScalef(width, height, 1);
-//     SetTexture(textureType, textName);
-//     glBegin(GL_POLYGON);
-//     glTexCoord2f(0.0, 0.0);
-//     glVertex3f(-0.5, 0, 0.0);
-//     glTexCoord2f(1.0, 0.0);
-//     glVertex3f(0.5, 0, 0.0);
-//     glTexCoord2f(1.0, 1.0);
-//     glVertex3f(0.5, 1, 0.0);
-//     glTexCoord2f(0.0, 1.0);
-//     glVertex3f(-0.5, 1, 0.0);
-//     glEnd();
-//     glPopMatrix();
-// }
+void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textureType){
+    glPushMatrix();
+    glTranslatef(mirrorLoc.x(), mirrorLoc.y(), mirrorLoc.z());
+    glScalef(width, height, 1);
+    SetTexture(textureType, textName);
+    glBegin(GL_POLYGON);
+    glTexCoord2f(0.0, 0.0);
+    glVertex3f(-0.5, 0, 0.0);
+    glTexCoord2f(1.0, 0.0);
+    glVertex3f(0.5, 0, 0.0);
+    glTexCoord2f(1.0, 1.0);
+    glVertex3f(0.5, 1, 0.0);
+    glTexCoord2f(0.0, 1.0);
+    glVertex3f(-0.5, 1, 0.0);
+    glEnd();
+    glPopMatrix();
+}
 void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
@@ -1034,7 +1034,6 @@ void DrawFog(Eigen::Vector3f color){
     // float fog_color[] = { 0.15, 0.20, 0.20, 0.50 };
     color /= 4;
     float fog_color[4] = { color.x(), color.y(), color.z(), 1.0 };
-    glEnable(GL_FOG);                /*enable fog fade */
     glFogi(GL_FOG_MODE, GL_LINEAR);  /*fog factor=GL_LINEAR,GL_EXP,or GL_EXP2*/
     glFogf(GL_FOG_DENSITY, 0.15);    /*fog opacity(density)= 0.25*/
     glFogf(GL_FOG_START, 1.0);       /*Setup two ends for GL_LINEAR*/
