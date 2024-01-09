@@ -2,9 +2,12 @@
 
 #include "main.h"
 
-#define MAP_LENGTH 50
+#define MAP_LENGTH 100
 #define BUILDING_NUM 20
 #define TREE_NUM 3
+#define BILLBOARD_TREE_NUM 5
+#define BILLBOARD_GRASS_NUM 5
+#define BILLBOARD_FLOWER_NUM 5
 #define MAGANIFICATION 2.0f
 #define ESP ((float)1e-7)
 #define MOVE_SPEED 0.75f
@@ -18,10 +21,10 @@ int height = 600;
 
 // helicopter
 float helicopterX = 0, helicopterY = 20.0, helicopterZ = 10.0;
-float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
+float lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ - 100;
 float upX = 0.0, upY = 1.0, upZ = 0.0;
 // float lookAtX = helicopterX - 50, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
-float helicopterRotateX = 0.0, helicopterRotateY = 0.0, helicopterRotateZ = 0.0;
+float helicopterRotateX = 0.0, helicopterRotateY = 180, helicopterRotateZ = 0.0;
 float helicopterLightDirectionX = 0.0, helicopterLightDirectionY = -1, helicopterLightDirectionZ = 0;
 float helicopterLightInstance = 1.0;
 float helicopterLightCutoff = 45.0f;
@@ -77,15 +80,31 @@ Model building;
 Model parLight;
 std::pair<int, int> buildingPos[BUILDING_NUM];
 float buildingRotate[BUILDING_NUM];
-std::pair<int, int> treePos[TREE_NUM];
-float treeRotate[TREE_NUM];
-branch tree[TREE_NUM];
+std::pair<int, int> modelTreePos[TREE_NUM];
+float modelTreeRotate[TREE_NUM];
+branch modelTree[TREE_NUM];
 
 // Texture
 unsigned char wood[TEXTURE_SIZE][TEXTURE_SIZE][4];
 unsigned char metal[TEXTURE_SIZE][TEXTURE_SIZE][4];
 unsigned char wood2[TEXTURE_SIZE][TEXTURE_SIZE][4];
 unsigned char cement[TEXTURE_SIZE][TEXTURE_SIZE][4];
+unsigned char earth[TEXTURE_SIZE][TEXTURE_SIZE][4];
+unsigned char sky[TEXTURE_SIZE][TEXTURE_SIZE][4];
+
+//Billboard Pos
+std::pair<int, int> billboardTreePos[BILLBOARD_TREE_NUM];
+std::pair<int, int> billboardGrass1Pos[BILLBOARD_GRASS_NUM];
+std::pair<int, int> billboardGrass2Pos[BILLBOARD_GRASS_NUM];
+std::pair<int, int> billboardFlower1Pos[BILLBOARD_FLOWER_NUM];
+std::pair<int, int> billboardFlower2Pos[BILLBOARD_FLOWER_NUM];
+
+//Billboard
+unsigned char tree[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
+unsigned char grass1[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
+unsigned char grass2[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
+unsigned char flower1[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
+unsigned char flower2[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 
 
 Eigen::Vector3f lightColor[] = {
@@ -106,7 +125,7 @@ void init(){
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
-
+    glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
     glClearDepth(1.0);
     glEnable(GL_LIGHTING);
@@ -146,47 +165,113 @@ void init(){
         gluQuadricNormals(disk, GLU_SMOOTH);
     }
     for(int i = 0; i < BUILDING_NUM; i++){
-
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
         // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
         buildingPos[i] = std::make_pair(tx, tz);
         buildingRotate[i] = (float) (rand() % 360);
     }
+    // /*
     for(int i = 0; i < TREE_NUM; i++){
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
         // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
-        treePos[i] = std::make_pair(tx, tz);
-        treeRotate[i] = (float) (rand() % 360);
-        tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
-        tree[i].grow(200);
-        tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
-        tree[i].grow(500);
-        tree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
-        tree[i].grow(500);
-        tree[i].bud(20.0f / 255.0, 90.0f / 50.0, 0);
-        tree[i].grow(50);
+        modelTreePos[i] = std::make_pair(tx, tz);
+        modelTreeRotate[i] = (float) (rand() % 360);
+        modelTree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
+        modelTree[i].grow(200);
+        modelTree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
+        modelTree[i].grow(500);
+        modelTree[i].bud(110.0f / 255.0, 44.0f / 255.0, 0);
+        modelTree[i].grow(500);
+        modelTree[i].bud(20.0f / 255.0, 90.0f / 50.0, 0);
+        modelTree[i].grow(50);
     }
-    Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
+    // */
+    for(int i = 0; i < BILLBOARD_TREE_NUM; i++){
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        billboardTreePos[i] = std::make_pair(tx, tz);
+    }
+    for(int i = 0; i < BILLBOARD_GRASS_NUM; i++){
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        billboardGrass1Pos[i] = std::make_pair(tx, tz);
+    }
+    for(int i = 0; i < BILLBOARD_GRASS_NUM; i++){
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        billboardGrass2Pos[i] = std::make_pair(tx, tz);
+    }
+    for(int i = 0; i < BILLBOARD_FLOWER_NUM; i++){
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        billboardFlower1Pos[i] = std::make_pair(tx, tz);
+    }
+    for(int i = 0; i < BILLBOARD_FLOWER_NUM; i++){
+        int tx = rand() % (int) mapWidth;
+        int tz = rand() % (int) mapHeight;
+        // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
+        billboardFlower2Pos[i] = std::make_pair(tx, tz);
+    }
+    Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
         Eigen::Vector3f(1, 0, 0), 90.0f);
     helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
     perlin p;
     p.perlin_noise(candleLightInstance, 1000, time(NULL));
     glPixelStorei(GL_UNPACK_ALIGNMENT, 10);
     glGenTextures(10, textName);
-    read_texture(wood2, "../../texture/wood2.jpg", 256, 256);
+    glGenTextures(10, billboardName);
+
+    ReadTexture(wood2, "../../texture/wood2.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD2_TEXTURE]);
     TextureInit(WOOD2_TEXTURE, textName, wood2, 256, 256);
-    read_texture(cement, "../../texture/cement.jpg", 256, 256);
+
+    ReadTexture(cement, "../../texture/cement.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::CEMENT_TEXTURE]);
     TextureInit(CEMENT_TEXTURE, textName, cement, 256, 256);
-    read_texture(wood, "../../texture/wood.jpg", 256, 256);
+
+    ReadTexture(wood, "../../texture/wood.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::WOOD_TEXTURE]);
     TextureInit(WOOD_TEXTURE, textName, wood, 256, 256);
-    read_texture(metal, "../../texture/metal.jpg", 256, 256);
+
+    ReadTexture(metal, "../../texture/metal.jpg", 256, 256);
     glBindTexture(GL_TEXTURE_2D, textName[texture::METAL_TEXTURE]);
     TextureInit(METAL_TEXTURE, textName, metal, 256, 256);
+
+    ReadTexture(earth, "../../texture/earth.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::EARTH_TEXTURE]);
+    TextureInit(EARTH_TEXTURE, textName, earth, 256, 256);
+
+    ReadBillboard(tree, "../../billboard/tree.png", 512, 512);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboard::TREE_BILLBOARD]);
+    BillboardInit(TREE_BILLBOARD, billboardName, tree, 512, 512);
+
+    ReadBillboard(grass1, "../../billboard/grass1.png", 512, 512);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboard::GRASS1_BILLBOARD]);
+    BillboardInit(GRASS1_BILLBOARD, billboardName, grass1, 512, 512);
+
+    ReadBillboard(grass2, "../../billboard/grass2.png", 512, 512);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboard::GRASS2_BILLBOARD]);
+    BillboardInit(GRASS2_BILLBOARD, billboardName, grass2, 512, 512);
+
+    ReadBillboard(flower1, "../../billboard/flower1.png", 512, 512);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboard::FLOWER1_BILLBOARD]);
+    BillboardInit(FLOWER1_BILLBOARD, billboardName, flower1, 512, 512);
+
+    ReadBillboard(flower2, "../../billboard/flower2.png", 512, 512);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboard::FLOWER2_BILLBOARD]);
+    BillboardInit(FLOWER2_BILLBOARD, billboardName, flower2, 512, 512);
+
+    ReadTexture(sky, "../../texture/sky.jpg", 256, 256);
+    glBindTexture(GL_TEXTURE_2D, textName[texture::SKY_TEXTURE]);
+    TextureInit(SKY_TEXTURE, textName, sky, 256, 256);
+
+
 
 
 
@@ -213,24 +298,31 @@ void reset_all(){
 
 void draw_scene(bool viewVolume, bool view = true){
     glPushMatrix();
-    draw_candle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
-    draw_axes();
-    draw_sun_light(lightColor[sunLightColorIndex], sunLightInstance);
-    draw_fixable_light(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
+    DrawCandle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
+    DrawAxes();
+    DrawSunLight(lightColor[sunLightColorIndex], sunLightInstance);
+    DrawFixableLight(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
         Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
         lightColor[fixableLightColorIndex], fixableLightInstance, fixableLightCutoff);
-    draw_par_light(PAR_LIGHT0, Eigen::Vector3f(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
-    draw_par_light(PAR_LIGHT1, Eigen::Vector3f(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
-    draw_par_light(PAR_LIGHT2, Eigen::Vector3f(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
-    draw_helicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ),
+    DrawParLight(PAR_LIGHT0, Eigen::Vector3f(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
+    DrawParLight(PAR_LIGHT1, Eigen::Vector3f(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
+    DrawParLight(PAR_LIGHT2, Eigen::Vector3f(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
+    DrawHelicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ),
         Eigen::Vector3f(helicopterRotateX, helicopterRotateY, helicopterRotateZ),
         Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
         lightColor[helicopterLightColorIndex], self_ang, helicopterLightCutoff, helicopterLightInstance);
-    // SetMaterial(WOOD);
-    // draw_tree(treePos, treeRotate, tree, TREE_NUM);
-    draw_building(buildingPos, buildingRotate, building, BUILDING_NUM);
-    if(view)draw_floor(MAP_LENGTH);
-    if(viewVolume) draw_view_volume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
+    SetMaterial(WOOD);
+    DrawModelTree(modelTreePos, modelTreeRotate, modelTree, TREE_NUM);
+    DrawBillboardTree(billboardTreePos, BILLBOARD_TREE_NUM);
+    DrawBillboardGrass(billboardGrass1Pos, BILLBOARD_GRASS_NUM, GRASS1_BILLBOARD);
+    DrawBillboardGrass(billboardGrass2Pos, BILLBOARD_GRASS_NUM, GRASS2_BILLBOARD);
+    DrawBillboardFlower(billboardGrass1Pos, BILLBOARD_FLOWER_NUM, FLOWER1_BILLBOARD);
+    DrawBillboardFlower(billboardFlower1Pos, BILLBOARD_FLOWER_NUM, FLOWER1_BILLBOARD);
+    DrawBillboardFlower(billboardFlower2Pos, BILLBOARD_FLOWER_NUM, FLOWER2_BILLBOARD);
+    DrawBuilding(buildingPos, buildingRotate, building, BUILDING_NUM);
+    if(view)DrawFloor(MAP_LENGTH);
+    if(viewVolume) DrawViewVolume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
+    DrawSkyBox(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ));
     glPopMatrix();
 }
 
@@ -279,7 +371,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(0);
-    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
@@ -290,7 +382,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
-    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
 
@@ -302,7 +394,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(1);
-    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
@@ -313,7 +405,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(3);
-    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 }
 
@@ -339,14 +431,15 @@ void singleview_projection(){
     }
     if(viewPoint == 3) draw_scene(0, (lookAtY > ESP));
     else draw_scene(1);
-    draw_view(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
 
 }
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
+    glGetFloatv(GL_MODELVIEW_MATRIX, mtx);
+    ComputeABAxes();
     switch(viewMode){
         case 0:
         singleview_projection();
@@ -451,19 +544,19 @@ void update(){
         //yghj
     // /*
         if(keyboardStates['y']){
-            Eigen::Vector3f res = move_camera_ud(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
+            Eigen::Vector3f res = MoveCameraUD(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
             lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f res = move_camera_ud(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
+            Eigen::Vector3f res = MoveCameraUD(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
             lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f res = move_camera_lr(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
+            Eigen::Vector3f res = MoveCameraLR(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
             lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f res = move_camera_lr(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
+            Eigen::Vector3f res = MoveCameraLR(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
             lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
         }
         if(keyboardStates['n']){
@@ -487,7 +580,7 @@ void update(){
             lookAtY += MOVE_SPEED;
         }
         if(directionKey[1]){
-            if(helicopterY > ESP){
+            if(helicopterY - 3 > ESP){
                 bladeRotateSpeed = BLADE_SPEED * 0.5;
                 helicopterY -= MOVE_SPEED;
                 lookAtY -= MOVE_SPEED;
@@ -515,22 +608,22 @@ void update(){
     }
     if(keyboardStates['z']){
         if(keyboardStates['y']){
-            Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(1, 0, 0),
+            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(1, 0, 0),
+            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(0, 1, 0),
+            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(0, 1, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(0, 1, 0),
+            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(0, 1, 0),
                 Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
         }
@@ -573,25 +666,25 @@ void update(){
         }
         //yghj
         if(keyboardStates['y']){
-            Eigen::Vector3f res = rotate_up(Eigen::Vector3f(1, 0, 0),
+            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 1.0f);
             fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f res = rotate_up(Eigen::Vector3f(1, 0, 0),
+            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(1, 0, 0),
                 Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 -1.0f);
             fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f res = rotate_up(Eigen::Vector3f(0, 1, 0)
+            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(0, 1, 0)
                 , Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 1.0f);
             fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f res = rotate_up(Eigen::Vector3f(0, 1, 0)
+            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(0, 1, 0)
                 , Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 -1.0f);
             fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
@@ -632,7 +725,7 @@ void update(){
     }
 
     //fixed up vector  
-    Eigen::Vector3f tup = up_vector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
+    Eigen::Vector3f tup = UpVector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
     upX = tup.x(); upY = tup.y(); upZ = tup.z();
 
     display();
@@ -655,7 +748,7 @@ void keyboardDown(unsigned char key, int x, int y){
             lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
             // helicopter lihgt reset
             helicopterLightDirectionX = 0.0, helicopterLightDirectionY = -1, helicopterLightDirectionZ = 0;
-            Eigen::Vector3f tld = rotate_up(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
+            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
                 Eigen::Vector3f(1, 0, 0), 90.0f);
             helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
             break;

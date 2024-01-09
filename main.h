@@ -38,7 +38,7 @@
 
 
 #define TEXTURE_SIZE 256
-
+#define BILLBOARD_SIZE 512
 #define ESP 1e-6
 
 GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
@@ -46,11 +46,10 @@ GLUquadricObj *sphere = NULL, *cylind = NULL, *disk;
 float points[][3] = { {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1} };
 int face[][4] = { {0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5}, {4, 5, 6, 7}, {2, 3, 7, 6}, {0, 4, 7, 3} };
 float colors[6][3] = { {0.5, 0.5, 0.5}, {0.7, 0.7, 0.7}, {0.7, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.7, 0.5}, {0.5, 0.5, 0.7} };
+float mtx[16];
+float a[3], b[3];
 unsigned int textName[10];
-
-
-
-
+unsigned int billboardName[10];
 
 bool helicopterLightStatus = 1;
 bool sunLightStatus = 1;
@@ -62,10 +61,32 @@ enum material{
 }MATERIAL;
 
 enum texture : int32_t{
-    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE
+    METAL_TEXTURE = 0, WOOD_TEXTURE = 1, WOOD2_TEXTURE, CEMENT_TEXTURE, RUBBER_TEXTURE, EARTH_TEXTURE, SKY_TEXTURE
 }TEXTURE;
 
-void read_texture(unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], char *filename, int width = TEXTURE_SIZE, int height = TEXTURE_SIZE){
+enum billboard : int32_t{
+    TREE_BILLBOARD = 0, GRASS1_BILLBOARD = 1, GRASS2_BILLBOARD, FLOWER1_BILLBOARD, FLOWER2_BILLBOARD
+}BILLBOARD;
+
+void ComputeABAxes(){
+    float w0, w2;
+    double len;
+
+    /*----Get w0 and w2 from the modelview matrix mtx[] ---*/
+    w0 = mtx[2];
+    w2 = mtx[10];
+
+    len = sqrt(w0 * w0 + w2 * w2);
+    /*---- Define the a and b axes for billboards ----*/
+    b[0] = 0.0;
+    b[1] = 1.0;
+    b[2] = 0.0;
+    a[0] = w2 / len;
+    a[1] = 0.0;
+    a[2] = -w0 / len;
+}
+
+void ReadTexture(unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], char *filename, int width = TEXTURE_SIZE, int height = TEXTURE_SIZE){
     cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
     if(img.empty()){
         std::cout << "Could not read the image: " << filename << std::endl;
@@ -83,23 +104,65 @@ void read_texture(unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], char *fi
             texture[i][j][3] = 1.0;
         }
     }
+    for(int i = 0; i < img.rows / 2; i++){
+        for(int j = 0; j < img.cols; j++){
+            std::swap(texture[i][j][0], texture[img.rows - i - 1][j][0]);
+            std::swap(texture[i][j][1], texture[img.rows - i - 1][j][1]);
+            std::swap(texture[i][j][2], texture[img.rows - i - 1][j][2]);
+            std::swap(texture[i][j][3], texture[img.rows - i - 1][j][3]);
+        }
+    }
 }
 
+void ReadBillboard(unsigned char texture[BILLBOARD_SIZE][BILLBOARD_SIZE][4], char *filename, int width = BILLBOARD_SIZE, int height = BILLBOARD_SIZE){
+    cv::Mat img = cv::imread(filename, cv::IMREAD_UNCHANGED); // 讀取圖像，包括alpha通道
+    if(img.empty()){
+        std::cout << "Could not read the image: " << filename << std::endl;
+        return;
+    }
+    cv::resize(img, img, cv::Size(width, height));
+
+    for(int i = 0; i < img.rows; i++){
+        for(int j = 0; j < img.cols; j++){
+            cv::Vec4b color = img.at<cv::Vec4b>(cv::Point(j, i)); // 使用Vec4b來存儲RGBA顏色
+            texture[i][j][0] = color[2]; // R
+            texture[i][j][1] = color[1]; // G
+            texture[i][j][2] = color[0]; // B
+            texture[i][j][3] = color[3]; // A
+        }
+    }
+    for(int i = 0; i < img.rows / 2; i++){
+        for(int j = 0; j < img.cols; j++){
+            std::swap(texture[i][j][0], texture[img.rows - i - 1][j][0]);
+            std::swap(texture[i][j][1], texture[img.rows - i - 1][j][1]);
+            std::swap(texture[i][j][2], texture[img.rows - i - 1][j][2]);
+            std::swap(texture[i][j][3], texture[img.rows - i - 1][j][3]);
+        }
+    }
+}
 
 void TextureInit(texture textType, unsigned int *textName, unsigned char texture[TEXTURE_SIZE][TEXTURE_SIZE][4], int width, int height){
     glBindTexture(GL_TEXTURE_2D, textName[textType]);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); // GL_NEAREST = no smoothing
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+}
 
+void BillboardInit(billboard billboardType, unsigned int *billboardName, unsigned char texture[BILLBOARD_SIZE][BILLBOARD_SIZE][4], int width, int height){
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboardType]);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BILLBOARD_SIZE, BILLBOARD_SIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
 }
 
 void SetTexture(texture textType, unsigned int *textName){
     float diffuse[] = { 0.8, 0.8, 0.8, 1.0 };
     float specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    float ambient[] = { 1.0, 1.0, 1.0, 1.0 };
+    float ambient[] = { 0.8, 0.8, 0.8, 1.0 };
     float emission[] = { 0.0, 0.0, 0.0, 1.0 };
     float shininess = 0.0;
     glEnable(GL_TEXTURE_2D);
@@ -112,14 +175,9 @@ void SetTexture(texture textType, unsigned int *textName){
         specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
         break;
 
-        case WOOD_TEXTURE:
-        shininess = 0.6;
-        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
-        break;
-
-        case WOOD2_TEXTURE:
-        shininess = 0.6;
-        specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
+        case WOOD_TEXTURE: case WOOD2_TEXTURE: case EARTH_TEXTURE:
+        shininess = 0.1;
+        specular[0] = 0.4; specular[1] = 0.2; specular[2] = 0.0;
         break;
 
         case RUBBER_TEXTURE:
@@ -127,6 +185,32 @@ void SetTexture(texture textType, unsigned int *textName){
         break;
 
         case CEMENT_TEXTURE:
+        shininess = 0.08;
+        specular[0] = 0.0; specular[1] = 0.0; specular[2] = 0.0;
+        break;
+
+        default:
+        break;
+    }
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
+}
+
+void SetBillboard(billboard billboardType, unsigned int *billboardName){
+    float diffuse[] = { 0.8, 0.8, 0.8, 1.0 };
+    float specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    float ambient[] = { 0.8, 0.8, 0.8, 1.0 };
+    float emission[] = { 0.0, 0.0, 0.0, 1.0 };
+    float shininess = 0.0;
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, billboardName[billboardType]);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    switch(billboardType){
+        case TREE_BILLBOARD:
         shininess = 0.6;
         specular[0] = 0.508273; specular[1] = 0.508273; specular[2] = 0.508273;
         break;
@@ -138,6 +222,7 @@ void SetTexture(texture textType, unsigned int *textName){
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
 
 void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
@@ -151,7 +236,7 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
         case METAL: // Metal
         mat_ambient[0] = r; mat_ambient[1] = g; mat_ambient[2] = b;
         mat_diffuse[0] = r; mat_diffuse[1] = g; mat_diffuse[2] = b;
-        mat_specular[0] = 0.508273 * r; mat_specular[1] = 0.508273 * g; mat_specular[2] = 0.508273 * b;
+        mat_specular[0] = 0.508273 * r; mat_specular[1] = 0.508273; mat_specular[2] = 0.508273 * b;
         mat_shininess[0] = 64;
         break;
 
@@ -222,7 +307,57 @@ void SetMaterial(material materialType, float r = 1, float g = 1, float b = 1){
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
 }
 
-void draw_sun_light(Eigen::Vector3f color, float instance){
+void DrawBillboard(float x, float y, float z, float w, float h, billboard billboardType, unsigned int *billboardName){
+    float v0[3], v1[3], v2[3], v3[3];
+
+
+    // glPushMatrix();
+    // glTranslatef(x, y, z);
+    // glScalef(2, 2, 2);
+    // Cube(1, 1, 1);
+    // glPopMatrix();
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.5);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    /*----Compute the 4 vertices of the billboard ----*/
+    v0[0] = x - (w / 2) * a[0];
+    v0[1] = 0.0;
+    v0[2] = z - (w / 2) * a[2];
+    v1[0] = x + (w / 2) * a[0];
+    v1[1] = 0.0;
+    v1[2] = z + (w / 2) * a[2];
+    v2[0] = x + (w / 2) * a[0];
+    v2[1] = h;
+    v2[2] = z + (w / 2) * a[2];
+    v3[0] = x - (w / 2) * a[0];
+    v3[1] = h;
+    v3[2] = z - (w / 2) * a[2];
+    // std::cout << v0[0] << " " << v0[1] << " " << v0[2] << std::endl;
+    // std::cout << v1[0] << " " << v1[1] << " " << v1[2] << std::endl;
+    // std::cout << v2[0] << " " << v2[1] << " " << v2[2] << std::endl;
+    // std::cout << v3[0] << " " << v3[1] << " " << v3[2] << std::endl;
+    SetBillboard(billboardType, billboardName);
+    // SetTexture(METAL_TEXTURE, textName);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 0.0);
+    glVertex3fv(v0);
+    glTexCoord2f(1.0, 0.0);
+    glVertex3fv(v1);
+    glTexCoord2f(1.0, 1.0);
+    glVertex3fv(v2);
+    glTexCoord2f(0.0, 1.0);
+    glVertex3fv(v3);
+    glEnd();
+    glDisable(GL_ALPHA_TEST);
+    glDisable(GL_BLEND);
+}
+
+void DrawSunLight(Eigen::Vector3f color, float instance){
     // glEnable(SUN_LIGHT);
     glPushMatrix();
     glTranslatef(225, 10, 225);
@@ -243,7 +378,7 @@ void draw_sun_light(Eigen::Vector3f color, float instance){
     glPopMatrix();
 }
 
-void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
+void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
     float r = color.x() * intensity;
@@ -284,6 +419,30 @@ void helicopter_light(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, 
     glLightf(HELICOPTER_LIGHT2, GL_CONSTANT_ATTENUATION, 2.0);
 }
 
+void SkyBox(){
+    // glScalef(1.0, 3.0, 1.0);
+    // SetTexture(METAL_TEXTURE, textName);
+    glPushMatrix();
+    glScalef(750, 750, 750);
+    SetTexture(SKY_TEXTURE, textName);
+    for(int i = 0; i < 6; i++){
+        glBegin(GL_POLYGON);
+        glTexCoord2f(0.0, 0.0);
+        glVertex3fv(points[face[i][0]]);
+        glTexCoord2f(1.0, 0.0);
+        glVertex3fv(points[face[i][1]]);
+        glTexCoord2f(1.0, 1.0);
+        glVertex3fv(points[face[i][2]]);
+        glTexCoord2f(0.0, 1.0);
+        glVertex3fv(points[face[i][3]]);
+        glEnd();
+    }
+    // GLUquadric *quad = gluNewQuadric();
+    // gluSphere(quad, 1.0, 100, 100);
+    // gluDeleteQuadric(quad);
+
+    glPopMatrix();
+}
 
 void Cube(float r, float g, float b){
     // glScalef(1.0, 3.0, 1.0);
@@ -313,7 +472,7 @@ void Blade(){
     SetMaterial(METAL, 1.0, 1.0, 1.0);
 }
 
-Eigen::Matrix3f rotation_matrix(Eigen::Vector3f axis, double theta){
+Eigen::Matrix3f RotationMatrix(Eigen::Vector3f axis, double theta){
     axis = axis / axis.norm();
     double a = cos(theta / 2.0);
     double b, c, d;
@@ -331,7 +490,7 @@ Eigen::Matrix3f rotation_matrix(Eigen::Vector3f axis, double theta){
     return rot_mat;
 }
 
-Eigen::Vector3f rotate_matrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
+Eigen::Vector3f RotateMatrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
     double t = degree * PI / 180;
 
     // 計算從O到P的向量
@@ -349,14 +508,14 @@ Eigen::Vector3f rotate_matrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree
     axis = axis / axis.norm();
 
     // 計算旋轉矩陣
-    Eigen::Matrix3f R = rotation_matrix(axis, t);
+    Eigen::Matrix3f R = RotationMatrix(axis, t);
 
     // 計算旋轉後的點
     Eigen::Vector3f P_prime = R * OP + O;
     return P_prime;
 }
 
-Eigen::Vector3f rotate_up(Eigen::Vector3f l, Eigen::Vector3f v, float degree){
+Eigen::Vector3f RotateUp(Eigen::Vector3f l, Eigen::Vector3f v, float degree){
     Eigen::Vector3f result;
     degree = degree * PI / 180;
     result = v * cos(degree) + (l.cross(v) * sin(degree)) + l * (l.dot(v)) * (1 - cos(degree));
@@ -368,7 +527,7 @@ Eigen::Vector3f rotate_up(Eigen::Vector3f l, Eigen::Vector3f v, float degree){
 /*-------------------------------------------------------
  * Procedure to draw three axes and the orign
  */
-void draw_axes(){
+void DrawAxes(){
 
     /*----Draw a white sphere to represent the original-----*/
     // glColor3f(0.9, 0.9, 0.9);
@@ -425,7 +584,7 @@ void Tire(float r, float g, float b){
     glPopMatrix();
 }
 
-void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff, float intensity){
+void DrawHelicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff, float intensity){
     float helicopterX = helicopterLocation(0);
     float helicopterY = helicopterLocation(1);
     float helicopterZ = helicopterLocation(2);
@@ -443,7 +602,7 @@ void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicop
 
     // glScalef(10.0f, 10.0f, 10.0f);
 
-    helicopter_light(color, lightDir, cutoff, intensity);
+    HelicopterLight(color, lightDir, cutoff, intensity);
 
 
     //Main body
@@ -574,7 +733,7 @@ void draw_helicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicop
     glPopMatrix();
 }
 
-void draw_tree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, int tree_num){
+void DrawModelTree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, int tree_num){
     for(int i = 0; i < tree_num; i++){
         // glColor3f(1, 1, 1);
         glPushMatrix();
@@ -590,9 +749,27 @@ void draw_tree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, in
     }
 }
 
+void DrawBillboardTree(std::pair<int, int> *treePos, int tree_num){
+    for(int i = 0; i < tree_num; i++){
+        DrawBillboard(treePos[i].first, 0, treePos[i].second, 100, 100, TREE_BILLBOARD, billboardName);
+        // draw_billboard(5, 0, 5, 50, 50, TREE_BILLBOARD, billboardName);
+    }
+}
+
+void DrawBillboardGrass(std::pair<int, int> *grassPos, int grass_num, billboard billboardType){
+    for(int i = 0; i < grass_num; i++){
+        DrawBillboard(grassPos[i].first, 0, grassPos[i].second, 10, 10, billboardType, billboardName);
+    }
+}
+
+void DrawBillboardFlower(std::pair<int, int> *flowerPos, int flower_num, billboard billboardType){
+    for(int i = 0; i < flower_num; i++){
+        DrawBillboard(flowerPos[i].first, 0, flowerPos[i].second, 10, 10, billboardType, billboardName);
+    }
+}
 
 
-void draw_building(std::pair<int, int> *buildingPos, float *buildingRotate, Model building, int building_num){
+void DrawBuilding(std::pair<int, int> *buildingPos, float *buildingRotate, Model building, int building_num){
     for(int i = 0; i < building_num; i++){
         SetTexture(CEMENT_TEXTURE, textName);
         // SetMaterial(CEMENT, 0.1, 0.1, 0.1);
@@ -608,7 +785,7 @@ void draw_building(std::pair<int, int> *buildingPos, float *buildingRotate, Mode
     }
 }
 
-void draw_par_light(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Vector3f color, Model par_light, bool test = 0){
+void DrawParLight(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Vector3f color, Model par_light, bool test = 0){
     glPushMatrix();
     glTranslatef(loc.x(), loc.y(), loc.z());
     // glColor3f(color.x(), color.y(), color.z());
@@ -644,7 +821,7 @@ void draw_par_light(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Ve
     glPopMatrix();
 }
 
-void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f color, float intensity, float cutoff = 45.0){
+void DrawFixableLight(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f color, float intensity, float cutoff = 45.0){
     glPushMatrix();
     glTranslatef(loc.x(), loc.y(), loc.z());
     float r = color.x() * intensity;
@@ -674,7 +851,7 @@ void draw_fixable_light(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3
     glPopMatrix();
 }
 
-void draw_candle(Eigen::Vector3f loc, float instance){
+void DrawCandle(Eigen::Vector3f loc, float instance){
     // std::cout << instance << std::endl;
     float r = (247.0 / 255) * instance;
     float g = (91.0 / 255) * instance;
@@ -738,7 +915,7 @@ void draw_candle(Eigen::Vector3f loc, float instance){
 
 
 // /*
-void draw_view_volume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, float fov, float nearClip, float farClip, float aspectRatio, float upDegree){
+void DrawViewVolume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, float fov, float nearClip, float farClip, float aspectRatio, float upDegree){
     // float fov = CLIP_DEGREE;  // 視野角度
     // float nearClip = NEAR_CLIP;  // 近裁剪面
     // float farClip = FAR_CLIP;  // 遠裁剪面
@@ -763,8 +940,8 @@ void draw_view_volume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, 
     Eigen::Vector3f ud = lr.cross(viewDir);
     ud = ud / ud.norm();
     lr = lr / lr.norm();
-    Eigen::Vector3f rud = rotate_up(viewDir, ud, upDegree);
-    Eigen::Vector3f rlr = rotate_up(viewDir, lr, upDegree);
+    Eigen::Vector3f rud = RotateUp(viewDir, ud, upDegree);
+    Eigen::Vector3f rlr = RotateUp(viewDir, lr, upDegree);
     nearCilpTopRight = nearClipCenter + nearWidth * rlr + nearHeight * rud;
     nearClipTopLeft = nearClipCenter - nearWidth * rlr + nearHeight * rud;
     nearClipBottomRight = nearClipCenter + nearWidth * rlr - nearHeight * rud;
@@ -794,7 +971,7 @@ void draw_view_volume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, 
     glEnd();
 }
 
-void draw_view(Eigen::Vector3f helicopterLocation, float u[3][3]){
+void DrawView(Eigen::Vector3f helicopterLocation, float u[3][3]){
     int    i;
     float  x = helicopterLocation.x() + 10, y = helicopterLocation.y(), z = helicopterLocation.z();
     glMatrixMode(GL_MODELVIEW);
@@ -825,38 +1002,50 @@ void draw_view(Eigen::Vector3f helicopterLocation, float u[3][3]){
     glEnd();
 }
 
-void draw_floor(int len){
+void DrawFloor(int len){
     int i, j;
     for(i = 0; i < len; i++)
         for(j = 0; j < len; j++){
-            if((i + j) % 2 == 0){
-                // glColor3f(0.7, 0.7, 0.7);
-                // SetMaterial(FLOOR, 0.7, 0.7, 0.7);
-                SetTexture(WOOD2_TEXTURE, textName);
-            }
-            else{
-                // glColor3f(0.1, 0.1, 0.7);
-                // SetMaterial(FLOOR, 0.1, 0.1, 0.7);
-                SetTexture(WOOD_TEXTURE, textName);
-            }
+            // if((i + j) % 2 == 0){
+            //     // glColor3f(0.7, 0.7, 0.7);
+            //     // SetMaterial(FLOOR, 0.7, 0.7, 0.7);
+            //     SetTexture(WOOD2_TEXTURE, textName);
+            // }
+            // else{
+            //     // glColor3f(0.1, 0.1, 0.7);
+            //     // SetMaterial(FLOOR, 0.1, 0.1, 0.7);
+            //     SetTexture(WOOD_TEXTURE, textName);
+            // }
+            SetTexture(EARTH_TEXTURE, textName);
             glBegin(GL_POLYGON);
             glTexCoord2f(0.0, 0.0);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glVertex3f((i - 5.0) * 10.0, 0, (j - 5.0) * 10.0);
             glTexCoord2f(1.0, 0.0);
-            glVertex3f((i - 5.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 5.0) * 10.0, 0, (j - 4.0) * 10.0);
             glTexCoord2f(1.0, 1.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 4.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, 0, (j - 4.0) * 10.0);
             glTexCoord2f(0.0, 1.0);
-            glVertex3f((i - 4.0) * 10.0, -2.5, (j - 5.0) * 10.0);
+            glVertex3f((i - 4.0) * 10.0, 0, (j - 5.0) * 10.0);
             glEnd();
 
         }
 }
 
-Eigen::Vector3f move_camera_ud(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
+void DrawSkyBox(Eigen::Vector3f loc){
+    float x = loc.x();
+    float y = loc.y();
+    float z = loc.z();
+
+    glPushMatrix();
+    glTranslatef(x - 375, y - 200, z - 375);
+    SkyBox();
+    glPopMatrix();
+}
+
+Eigen::Vector3f MoveCameraUD(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
     // Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
     // Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f result = rotate_matrix(O, P, degree);
+    Eigen::Vector3f result = RotateMatrix(O, P, degree);
     Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
 
     Eigen::Vector3f tresult = result - O;
@@ -868,7 +1057,7 @@ Eigen::Vector3f move_camera_ud(Eigen::Vector3f O, Eigen::Vector3f P, float degre
     else return result;
 }
 
-Eigen::Vector3f move_camera_lr(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
+Eigen::Vector3f MoveCameraLR(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
     //旋轉中心
     float center_x = O.x(),
         center_z = O.z();
@@ -884,12 +1073,12 @@ Eigen::Vector3f move_camera_lr(Eigen::Vector3f O, Eigen::Vector3f P, float degre
     return Eigen::Vector3f(tx + center_x, P.y(), tz + center_z);
 }
 
-Eigen::Vector3f up_vector(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
+Eigen::Vector3f UpVector(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
     Eigen::Vector3f l = P - O;
     Eigen::Vector3f v(l.z(), 0, -l.x());
     l = l / l.norm();
     v = v / v.norm();
-    Eigen::Vector3f result = rotate_up(l, v, degree);
+    Eigen::Vector3f result = RotateUp(l, v, degree);
     return result;
 }
 
