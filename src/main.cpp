@@ -87,7 +87,7 @@ std::pair<int, int> buildingPos[BUILDING_NUM];
 float buildingRotate[BUILDING_NUM];
 std::pair<int, int> modelTreePos[TREE_NUM];
 float modelTreeRotate[TREE_NUM];
-branch modelTree[TREE_NUM];
+// branch modelTree[TREE_NUM];
 
 // Texture
 unsigned char wood[TEXTURE_SIZE][TEXTURE_SIZE][4];
@@ -113,15 +113,16 @@ unsigned char flower2[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 unsigned char bird1[9][BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 //Bird Fly
 int birdFlyIndex = 0;
-Eigen::Vector3f birdFlyPos = { -20, 50, 100 };
+glm::vec3 birdFlyPos = { -20, 50, 100 };
 
 //Fog
 int fogColorIndex = 6;
 bool showFog = 1;
 
+
 bool demoMirror = 0;
 
-Eigen::Vector3f lightColor[] = {
+glm::vec3 lightColor[] = {
     {1.0,0.0,0.0},
     {1.0,1.0,0.0},
     {0.0,1.0,0.0},
@@ -134,9 +135,8 @@ const float sq2 = sqrt(2.0) / 2.0;
 
 unsigned char tmp[BILLBOARD_SIZE][BILLBOARD_SIZE][4];
 
-
-
 void init(){
+    // setGLSLshaders("Phong.vert", "Phong.frag");
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
@@ -188,7 +188,7 @@ void init(){
         buildingPos[i] = std::make_pair(tx, tz);
         buildingRotate[i] = (float) (rand() % 360);
     }
-    // /*
+    /*
     for(int i = 0; i < TREE_NUM; i++){
         int tx = rand() % (int) mapWidth;
         int tz = rand() % (int) mapHeight;
@@ -235,9 +235,9 @@ void init(){
         // std::cout << "x: " << tx << " y: " << 0.0 << " z: " << tz << std::endl;
         billboardFlower2Pos[i] = std::make_pair(tx, tz);
     }
-    Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
-        Eigen::Vector3f(1, 0, 0), 90.0f);
-    helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+    glm::vec3 tld = RotateUp(glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
+        glm::vec3(1, 0, 0), 90.0f);
+    helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
     perlin p;
     p.perlin_noise(candleLightInstance, 1000, time(NULL));
     glPixelStorei(GL_UNPACK_ALIGNMENT, 10);
@@ -336,21 +336,21 @@ void reset_all(){
 
 void draw_scene(bool viewVolume, bool view = true, bool mirror = true){
     glPushMatrix();
-    DrawCandle(Eigen::Vector3f(15, 15, 0), candleLightInstance[cnadleLightIndex]);
+    DrawCandle(glm::vec3(15, 15, 0), candleLightInstance[cnadleLightIndex]);
     DrawAxes();
     DrawSunLight(lightColor[sunLightColorIndex], sunLightInstance);
-    DrawFixableLight(Eigen::Vector3f(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
-        Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+    DrawFixableLight(glm::vec3(fixableLightLocationX, fixableLightLocationY, fixableLightLocationZ),
+        glm::vec3(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
         lightColor[fixableLightColorIndex], fixableLightInstance, fixableLightCutoff);
-    DrawParLight(PAR_LIGHT0, Eigen::Vector3f(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
-    DrawParLight(PAR_LIGHT1, Eigen::Vector3f(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
-    DrawParLight(PAR_LIGHT2, Eigen::Vector3f(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
-    DrawHelicopter(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ),
-        Eigen::Vector3f(helicopterRotateX, helicopterRotateY, helicopterRotateZ),
-        Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
+    DrawParLight(PAR_LIGHT0, glm::vec3(150 - 14.14 * 2, 0, 150), 120, lightColor[parLightColorIndex[0]], parLight, parLightTest);
+    DrawParLight(PAR_LIGHT1, glm::vec3(150 + 14.14 * 2, 0, 150), 0, lightColor[parLightColorIndex[1]], parLight, parLightTest);
+    DrawParLight(PAR_LIGHT2, glm::vec3(150, 0, 150 + 20 * 2), 240, lightColor[parLightColorIndex[2]], parLight, parLightTest);
+    DrawHelicopter(glm::vec3(helicopterX, helicopterY, helicopterZ),
+        glm::vec3(helicopterRotateX, helicopterRotateY, helicopterRotateZ),
+        glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
         lightColor[helicopterLightColorIndex], self_ang, helicopterLightCutoff, helicopterLightInstance);
     SetMaterial(WOOD);
-    DrawModelTree(modelTreePos, modelTreeRotate, modelTree, TREE_NUM);
+    // DrawModelTree(modelTreePos, modelTreeRotate, modelTree, TREE_NUM);
     DrawBillboardTree(billboardTreePos, BILLBOARD_TREE_NUM);
     DrawBillboardGrass(billboardGrass1Pos, BILLBOARD_GRASS_NUM, GRASS1_BILLBOARD);
     DrawBillboardGrass(billboardGrass2Pos, BILLBOARD_GRASS_NUM, GRASS2_BILLBOARD);
@@ -359,11 +359,11 @@ void draw_scene(bool viewVolume, bool view = true, bool mirror = true){
     DrawBillboardFlower(billboardFlower2Pos, BILLBOARD_FLOWER_NUM, FLOWER2_BILLBOARD);
     DrawBuilding(buildingPos, buildingRotate, building, BUILDING_NUM);
     if(view)DrawFloor(MAP_LENGTH);
-    if(viewVolume) DrawViewVolume(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
-    if(!viewVolume) DrawSkyBox(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ));
+    if(viewVolume) DrawViewVolume(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), CLIP_DEGREE, NEAR_CLIP, FAR_CLIP, float(width) / float(height), upDegree);
+    if(!viewVolume) DrawSkyBox(glm::vec3(helicopterX, helicopterY, helicopterZ));
     if(mirror) DrawFog(lightColor[fogColorIndex]);
     DrawBird(birdFlyPos, birdFlyIndex, BIRD1_BILLBOARD);
-    if(mirror) DrawMirror(Eigen::Vector3f(mirrorX, 0, mirrorZ), mirrorWidth, mirrorHeight, texture::MIRROR_TEXTURE);
+    // if(mirror) DrawMirror(glm::vec3(mirrorX, 0, mirrorZ), mirrorWidth, mirrorHeight, texture::MIRROR_TEXTURE);
     glPopMatrix();
 }
 
@@ -412,7 +412,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(0);
-    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(glm::vec3(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
@@ -423,7 +423,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(2);
-    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(glm::vec3(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
 
@@ -435,7 +435,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(1);
-    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(glm::vec3(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 
     glPushMatrix();
@@ -446,7 +446,7 @@ void multiview_projection(){
     glPopMatrix();
     glPushMatrix();
     view_direction(3);
-    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(glm::vec3(helicopterX, helicopterY, helicopterZ), u);
     glPopMatrix();
 }
 
@@ -472,18 +472,18 @@ void singleview_projection(){
     }
     if(viewPoint == 3) draw_scene(0, (lookAtY > ESP));
     else draw_scene(1);
-    DrawView(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), u);
+    DrawView(glm::vec3(helicopterX, helicopterY, helicopterZ), u);
 
 }
-
-void GetFrameBuffer(unsigned char buffer[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4], Eigen::Vector3f cameraPos, Eigen::Vector3f cameraUp, float mirrorWidth, float mirrorHeight){
-    // std::cout << comeraPos.x() << " " << comeraPos.y() << " " << comeraPos.z() << std::endl;
+/*
+void GetFrameBuffer(unsigned char buffer[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZE][4], glm::vec3 cameraPos, glm::vec3 cameraUp, float mirrorWidth, float mirrorHeight){
+    // std::cout << comeraPos.x << " " << comeraPos.y << " " << comeraPos.z << std::endl;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     // 以cameraPos为视点，cameraUp为上方向，mirrorWidth和mirrorHeight为视口大小，相機位置为cameraPos，看向鏡子中心
     gluPerspective(CLIP_DEGREE, MIRROR_TEXTURE_SIZE / MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE * (FAR_CLIP / NEAR_CLIP));
-    gluLookAt(cameraPos.x(), cameraPos.y(), cameraPos.z(), mirrorX, mirrorHeight / 2, mirrorZ, cameraUp.x(), cameraUp.y(), cameraUp.z());
+    gluLookAt(cameraPos.x, cameraPos.y, cameraPos.z, mirrorX, mirrorHeight / 2, mirrorZ, cameraUp.x, cameraUp.y, cameraUp.z);
     draw_scene(0, (lookAtY > ESP), 0);
     glReadPixels(0, 0, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
     // for(int i = 0; i < MIRROR_TEXTURE_SIZE / 2; i++){
@@ -503,22 +503,23 @@ void GetFrameBuffer(unsigned char buffer[MIRROR_TEXTURE_SIZE][MIRROR_TEXTURE_SIZ
         }
     }
     glBindTexture(GL_TEXTURE_2D, textName[texture::MIRROR_TEXTURE]);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT = repeat texture
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, MIRROR_TEXTURE_SIZE, MIRROR_TEXTURE_SIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-}
+}\
+
 
 
 void MirrorFunc(){
-    // Eigen::Vector3f newCamera = Eigen::Vector3f(lookAtX, lookAtY, lookAtZ - (lookAtZ - mirrorZ) * 2.0f);
-    Eigen::Vector3f newCamera = Eigen::Vector3f(-lookAtX, lookAtY, -lookAtZ);
+    // glm::vec3 newCamera = glm::vec3(lookAtX, lookAtY, lookAtZ - (lookAtZ - mirrorZ) * 2.0f);
+    glm::vec3 newCamera = glm::vec3(-lookAtX, lookAtY, -lookAtZ);
 
-    Eigen::Vector3f newCameraUp = Eigen::Vector3f(0, 1, 0);
+    glm::vec3 newCameraUp = glm::vec3(0, 1, 0);
     GetFrameBuffer(mirrorTexture, newCamera, newCameraUp, mirrorWidth, mirrorHeight);
 }
-
+*/
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
@@ -534,7 +535,7 @@ void display(){
         break;
     }
     glutSwapBuffers();
-    MirrorFunc();
+    // MirrorFunc();
 }
 
 void reshap(int w, int h){
@@ -630,20 +631,20 @@ void update(){
         //yghj
     // /*
         if(keyboardStates['y']){
-            Eigen::Vector3f res = MoveCameraUD(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
-            lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
+            glm::vec3 res = MoveCameraUD(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), 1.0f);
+            lookAtX = res.x; lookAtY = res.y; lookAtZ = res.z;
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f res = MoveCameraUD(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
-            lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
+            glm::vec3 res = MoveCameraUD(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), -1.0f);
+            lookAtX = res.x; lookAtY = res.y; lookAtZ = res.z;
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f res = MoveCameraLR(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), 1.0f);
-            lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
+            glm::vec3 res = MoveCameraLR(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), 1.0f);
+            lookAtX = res.x; lookAtY = res.y; lookAtZ = res.z;
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f res = MoveCameraLR(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), -1.0f);
-            lookAtX = res.x(); lookAtY = res.y(); lookAtZ = res.z();
+            glm::vec3 res = MoveCameraLR(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), -1.0f);
+            lookAtX = res.x; lookAtY = res.y; lookAtZ = res.z;
         }
         if(keyboardStates['n']){
             zoom(1.0f);
@@ -694,24 +695,24 @@ void update(){
     }
     if(keyboardStates['z']){
         if(keyboardStates['y']){
-            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(1, 0, 0),
-                Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
-            helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+            glm::vec3 tld = RotateUp(glm::vec3(1, 0, 0),
+                glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
+            helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(1, 0, 0),
-                Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
-            helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+            glm::vec3 tld = RotateUp(glm::vec3(1, 0, 0),
+                glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
+            helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(0, 1, 0),
-                Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
-            helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+            glm::vec3 tld = RotateUp(glm::vec3(0, 1, 0),
+                glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), 1.0f);
+            helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(0, 1, 0),
-                Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
-            helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+            glm::vec3 tld = RotateUp(glm::vec3(0, 1, 0),
+                glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ), -1.0f);
+            helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
         }
         if(keyboardStates['b']){
             helicopterLightCutoff += 1.0f;
@@ -752,28 +753,28 @@ void update(){
         }
         //yghj
         if(keyboardStates['y']){
-            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(1, 0, 0),
-                Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+            glm::vec3 res = RotateUp(glm::vec3(1, 0, 0),
+                glm::vec3(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 1.0f);
-            fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
+            fixableLightDirectionX = res.x; fixableLightDirectionY = res.y; fixableLightDirectionZ = res.z;
         }
         if(keyboardStates['h']){
-            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(1, 0, 0),
-                Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+            glm::vec3 res = RotateUp(glm::vec3(1, 0, 0),
+                glm::vec3(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 -1.0f);
-            fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
+            fixableLightDirectionX = res.x; fixableLightDirectionY = res.y; fixableLightDirectionZ = res.z;
         }
         if(keyboardStates['g']){
-            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(0, 1, 0)
-                , Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+            glm::vec3 res = RotateUp(glm::vec3(0, 1, 0)
+                , glm::vec3(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 1.0f);
-            fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
+            fixableLightDirectionX = res.x; fixableLightDirectionY = res.y; fixableLightDirectionZ = res.z;
         }
         if(keyboardStates['j']){
-            Eigen::Vector3f res = RotateUp(Eigen::Vector3f(0, 1, 0)
-                , Eigen::Vector3f(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
+            glm::vec3 res = RotateUp(glm::vec3(0, 1, 0)
+                , glm::vec3(fixableLightDirectionX, fixableLightDirectionY, fixableLightDirectionZ),
                 -1.0f);
-            fixableLightDirectionX = res.x(); fixableLightDirectionY = res.y(); fixableLightDirectionZ = res.z();
+            fixableLightDirectionX = res.x; fixableLightDirectionY = res.y; fixableLightDirectionZ = res.z;
         }
         if(keyboardStates['b']){
             fixableLightCutoff += 1.0f;
@@ -811,8 +812,8 @@ void update(){
     }
 
     //fixed up vector  
-    Eigen::Vector3f tup = UpVector(Eigen::Vector3f(helicopterX, helicopterY, helicopterZ), Eigen::Vector3f(lookAtX, lookAtY, lookAtZ), upDegree);
-    upX = tup.x(); upY = tup.y(); upZ = tup.z();
+    glm::vec3 tup = UpVector(glm::vec3(helicopterX, helicopterY, helicopterZ), glm::vec3(lookAtX, lookAtY, lookAtZ), upDegree);
+    upX = tup.x; upY = tup.y; upZ = tup.z;
     display();
 }
 
@@ -833,9 +834,9 @@ void keyboardDown(unsigned char key, int x, int y){
             lookAtX = helicopterX - 0, lookAtY = helicopterY + 100, lookAtZ = helicopterZ + 100;
             // helicopter lihgt reset
             helicopterLightDirectionX = 0.0, helicopterLightDirectionY = -1, helicopterLightDirectionZ = 0;
-            Eigen::Vector3f tld = RotateUp(Eigen::Vector3f(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
-                Eigen::Vector3f(1, 0, 0), 90.0f);
-            helicopterLightDirectionX = tld.x(); helicopterLightDirectionY = tld.y(); helicopterLightDirectionZ = tld.z();
+            glm::vec3 tld = RotateUp(glm::vec3(helicopterLightDirectionX, helicopterLightDirectionY, helicopterLightDirectionZ),
+                glm::vec3(1, 0, 0), 90.0f);
+            helicopterLightDirectionX = tld.x; helicopterLightDirectionY = tld.y; helicopterLightDirectionZ = tld.z;
             break;
         }
 
@@ -1016,14 +1017,15 @@ void ParLightTimeFunc(int value){
 
 void BirdFlyAnimation(int value){
     birdFlyIndex = (birdFlyIndex + 1) % 9;
-    birdFlyPos.x() += 1.5f;
-    if(birdFlyPos.x() > 500.0f){
-        birdFlyPos.x() = -100.0f;
+    birdFlyPos.x += 1.5f;
+    if(birdFlyPos.x > 500.0f){
+        birdFlyPos.x = -100.0f;
     }
     glutTimerFunc(50, BirdFlyAnimation, 0);
 }
 int main(int argc, char **argv){
     glutInit(&argc, argv);
+    // glfwInit();
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     int POS_X = (glutGet(GLUT_SCREEN_WIDTH) - width) >> 1;
     int POS_Y = (glutGet(GLUT_SCREEN_HEIGHT) - height) >> 1;
@@ -1041,6 +1043,8 @@ int main(int argc, char **argv){
     glutTimerFunc(2000, ParLightTimeFunc, 0);
     glutTimerFunc(100, CandleLightShinee, 0);
     glutTimerFunc(100, BirdFlyAnimation, 0);
+
+
     glutMainLoop();
     return 0;
 }

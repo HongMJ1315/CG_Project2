@@ -2,9 +2,9 @@
 #define MAIN_H
 
 #include "load_model.h"
-#include "tree.h"
 #include "perlin.h"
 #include "img_split.h"
+#include "rotate_function.h"
 
 #include <math.h>
 #include <time.h>
@@ -364,11 +364,11 @@ void DrawBillboard(float x, float y, float z, float w, float h, billboard billbo
     glDisable(GL_BLEND);
 }
 
-void DrawSunLight(Eigen::Vector3f color, float instance){
+void DrawSunLight(glm::vec3 color, float instance){
     // glEnable(SUN_LIGHT);
     glPushMatrix();
     glTranslatef(225, 10, 225);
-    float r = color.x(), g = color.y(), b = color.z();
+    float r = color.x, g = color.y, b = color.z;
     GLfloat lightPosition[] = { 0, 0, 0, 0.0 };  // Light position (x, y, z, w), w=0 for directional light
     GLfloat lightAmbient[] = { r * 0.7 * instance, g * 0.7 * instance, b * 0.7 * instance, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
@@ -385,9 +385,9 @@ void DrawSunLight(Eigen::Vector3f color, float instance){
     glPopMatrix();
 }
 
-void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textureType){
+void DrawMirror(glm::vec3 mirrorLoc, int width, int height, texture textureType){
     glPushMatrix();
-    glTranslatef(mirrorLoc.x(), mirrorLoc.y(), mirrorLoc.z());
+    glTranslatef(mirrorLoc.x, mirrorLoc.y, mirrorLoc.z);
     glScalef(width, height, 1);
     SetTexture(textureType, textName);
     glBegin(GL_POLYGON);
@@ -402,12 +402,12 @@ void DrawMirror(Eigen::Vector3f mirrorLoc, int width, int height, texture textur
     glEnd();
     glPopMatrix();
 }
-void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, float intensity, bool isOn = true){
+void HelicopterLight(glm::vec3 color, glm::vec3 dir, float cutoff, float intensity, bool isOn = true){
     // glEnable(HELICOPTER_LIGHT);
 
-    float r = color.x() * intensity;
-    float g = color.y() * intensity;
-    float b = color.z() * intensity;
+    float r = color.x * intensity;
+    float g = color.y * intensity;
+    float b = color.z * intensity;
     r = std::min(r, 1.0f);
     g = std::min(g, 1.0f);
     b = std::min(b, 1.0f);
@@ -426,7 +426,7 @@ void HelicopterLight(Eigen::Vector3f color, Eigen::Vector3f dir, float cutoff, f
     glLightfv(HELICOPTER_LIGHT1, GL_SPECULAR, lightSpecular);
 
 
-    GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
+    GLfloat spot_direction[] = { dir.x, dir.y, dir.z };
     glLightfv(HELICOPTER_LIGHT1, GL_SPOT_DIRECTION, spot_direction);
     glLightf(HELICOPTER_LIGHT1, GL_SPOT_CUTOFF, cutoff);
     glLightf(HELICOPTER_LIGHT1, GL_SPOT_EXPONENT, 5.0);
@@ -496,55 +496,6 @@ void Blade(){
     SetMaterial(METAL, 1.0, 1.0, 1.0);
 }
 
-Eigen::Matrix3f RotationMatrix(Eigen::Vector3f axis, double theta){
-    axis = axis / axis.norm();
-    double a = cos(theta / 2.0);
-    double b, c, d;
-    b = -axis(0) * sin(theta / 2.0);
-    c = -axis(1) * sin(theta / 2.0);
-    d = -axis(2) * sin(theta / 2.0);
-    double aa, bb, cc, dd;
-    aa = a * a; bb = b * b; cc = c * c; dd = d * d;
-    double bc, ad, ac, ab, bd, cd;
-    bc = b * c; ad = a * d; ac = a * c; ab = a * b; bd = b * d; cd = c * d;
-    Eigen::Matrix3f rot_mat;
-    rot_mat << aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac),
-        2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab),
-        2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc;
-    return rot_mat;
-}
-
-Eigen::Vector3f RotateMatrix(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
-    double t = degree * PI / 180;
-
-    // 計算從O到P的向量
-    Eigen::Vector3f OP = P - O;
-    Eigen::Vector3f Z(0, 0, 1);
-
-    // 定義M平面的向量
-    // Eigen::Vector3f OM(O(0) - P(0), O(1) - P(1), 0);
-    Eigen::Vector3f OM(0, 1, 0);
-
-    // 計算旋轉軸
-    Eigen::Vector3f axis = OP.cross(OM);
-
-    // 正規化旋轉軸
-    axis = axis / axis.norm();
-
-    // 計算旋轉矩陣
-    Eigen::Matrix3f R = RotationMatrix(axis, t);
-
-    // 計算旋轉後的點
-    Eigen::Vector3f P_prime = R * OP + O;
-    return P_prime;
-}
-
-Eigen::Vector3f RotateUp(Eigen::Vector3f l, Eigen::Vector3f v, float degree){
-    Eigen::Vector3f result;
-    degree = degree * PI / 180;
-    result = v * cos(degree) + (l.cross(v) * sin(degree)) + l * (l.dot(v)) * (1 - cos(degree));
-    return result;
-}
 
 
 
@@ -608,17 +559,17 @@ void Tire(float r, float g, float b){
     glPopMatrix();
 }
 
-void DrawBird(Eigen::Vector3f loc, int animeFram, billboard billboardType){
-    DrawBillboard(loc(0), loc(1), loc(2), 30, 30, billboard(billboardType + animeFram), billboardName);
+void DrawBird(glm::vec3 loc, int animeFram, billboard billboardType){
+    DrawBillboard(loc.x, loc.y, loc.z, 30, 30, billboard(billboardType + animeFram), billboardName);
 }
 
-void DrawHelicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopterRotate, Eigen::Vector3f lightDir, Eigen::Vector3f color, float self_ang, float cutoff, float intensity){
-    float helicopterX = helicopterLocation(0);
-    float helicopterY = helicopterLocation(1);
-    float helicopterZ = helicopterLocation(2);
-    float helicopterRotateX = helicopterRotate(0);
-    float helicopterRotateY = helicopterRotate(1);
-    float helicopterRotateZ = helicopterRotate(2);
+void DrawHelicopter(glm::vec3 helicopterLocation, glm::vec3 helicopterRotate, glm::vec3 lightDir, glm::vec3 color, float self_ang, float cutoff, float intensity){
+    float helicopterX = helicopterLocation.x;
+    float helicopterY = helicopterLocation.y;
+    float helicopterZ = helicopterLocation.z;
+    float helicopterRotateX = helicopterRotate.x;
+    float helicopterRotateY = helicopterRotate.y;
+    float helicopterRotateZ = helicopterRotate.z;
     // std::cout << helicopterX << " " << helicopterY << " " << helicopterZ << std::endl;
     glPushMatrix();
     glTranslatef(helicopterX, helicopterY, helicopterZ + 12);
@@ -760,7 +711,7 @@ void DrawHelicopter(Eigen::Vector3f helicopterLocation, Eigen::Vector3f helicopt
 
     glPopMatrix();
 }
-
+/*
 void DrawModelTree(std::pair<int, int> *treePos, float *treeRotate, branch *tree, int tree_num){
     for(int i = 0; i < tree_num; i++){
         // glColor3f(1, 1, 1);
@@ -776,7 +727,7 @@ void DrawModelTree(std::pair<int, int> *treePos, float *treeRotate, branch *tree
         glPopMatrix();
     }
 }
-
+// */
 void DrawBillboardTree(std::pair<int, int> *treePos, int tree_num){
     for(int i = 0; i < tree_num; i++){
         DrawBillboard(treePos[i].first, 0, treePos[i].second, 100, 100, TREE_BILLBOARD, billboardName);
@@ -813,19 +764,19 @@ void DrawBuilding(std::pair<int, int> *buildingPos, float *buildingRotate, Model
     }
 }
 
-void DrawParLight(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Vector3f color, Model par_light, bool test = 0){
+void DrawParLight(int parLightID, glm::vec3 loc, float rotate, glm::vec3 color, Model par_light, bool test = 0){
     glPushMatrix();
-    glTranslatef(loc.x(), loc.y(), loc.z());
-    // glColor3f(color.x(), color.y(), color.z());
+    glTranslatef(loc.x, loc.y, loc.z);
+    // glColor3f(color.x, color.y, color.z);
     //rotate light
     glRotatef(rotate, 0.0f, 1.0f, 0.0f);
     SetMaterial(METAL, 0.1, 0.1, 0.1);
     if(test) par_light.draw();
-    float r = color.x();
-    float g = color.y();
-    float b = color.z();
+    float r = color.x;
+    float g = color.y;
+    float b = color.z;
     GLfloat lightPosition[] = { 0, 0, 0, 1.0 };  // Light position (x, y, z, w)
-    // GLfloat lightPosition[] = { loc.x() - 7.5, loc.y() + 7.5, loc.z(), 1.0 };  // Light position (x, y, z, w)
+    // GLfloat lightPosition[] = { loc.x - 7.5, loc.y + 7.5, loc.z, 1.0 };  // Light position (x, y, z, w)
     GLfloat lightAmbient[] = { 0.2 * r, 0.2 * g, 0.2 * b, 1.0 };     // Ambient light color (RGBA)
     GLfloat lightDiffuse[] = { r, g, b, 1.0 };     // Diffuse light color (RGBA)
     GLfloat lightSpecular[] = { r, g, b, 1.0 };    // Specular light color (RGBA)
@@ -849,12 +800,12 @@ void DrawParLight(int parLightID, Eigen::Vector3f loc, float rotate, Eigen::Vect
     glPopMatrix();
 }
 
-void DrawFixableLight(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f color, float intensity, float cutoff = 45.0){
+void DrawFixableLight(glm::vec3 loc, glm::vec3 dir, glm::vec3 color, float intensity, float cutoff = 45.0){
     glPushMatrix();
-    glTranslatef(loc.x(), loc.y(), loc.z());
-    float r = color.x() * intensity;
-    float g = color.y() * intensity;
-    float b = color.z() * intensity;
+    glTranslatef(loc.x, loc.y, loc.z);
+    float r = color.x * intensity;
+    float g = color.y * intensity;
+    float b = color.z * intensity;
     r = std::min(r, 1.0f);
     g = std::min(g, 1.0f);
     b = std::min(b, 1.0f);
@@ -871,7 +822,7 @@ void DrawFixableLight(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f 
     glLightfv(FIXABLE_LIGHT, GL_SPECULAR, lightSpecular);
     Cube(1, 1, 1);
 
-    GLfloat spot_direction[] = { dir.x(), dir.y(), dir.z() };
+    GLfloat spot_direction[] = { dir.x, dir.y, dir.z };
     glLightfv(FIXABLE_LIGHT, GL_SPOT_DIRECTION, spot_direction);
     glLightf(FIXABLE_LIGHT, GL_SPOT_CUTOFF, cutoff);
     glLightf(FIXABLE_LIGHT, GL_SPOT_EXPONENT, 5.0);
@@ -879,7 +830,7 @@ void DrawFixableLight(Eigen::Vector3f loc, Eigen::Vector3f dir, Eigen::Vector3f 
     glPopMatrix();
 }
 
-void DrawCandle(Eigen::Vector3f loc, float instance){
+void DrawCandle(glm::vec3 loc, float instance){
     // std::cout << instance << std::endl;
     float r = (247.0 / 255) * instance;
     float g = (91.0 / 255) * instance;
@@ -888,7 +839,7 @@ void DrawCandle(Eigen::Vector3f loc, float instance){
     glPushMatrix();
     glScalef(5, 5, 5);
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    glTranslatef(loc.x(), loc.y(), loc.z() - 1.5);
+    glTranslatef(loc.x, loc.y, loc.z - 1.5);
     glPushMatrix();
     glScalef(1, 1, 2);
     glTranslatef(0, 0, 0);
@@ -917,7 +868,7 @@ void DrawCandle(Eigen::Vector3f loc, float instance){
     glPopMatrix();
     // cnadle light
     glPushMatrix();
-    glTranslatef(loc.x() * 5, loc.z() * 5 + 10, loc.y() * 5);
+    glTranslatef(loc.x * 5, loc.z * 5 + 10, loc.y * 5);
     // glPushMatrix();
     // glScalef(1, 10, 1);
     // Cube(1, 1, 1);
@@ -943,7 +894,7 @@ void DrawCandle(Eigen::Vector3f loc, float instance){
 
 
 // /*
-void DrawViewVolume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, float fov, float nearClip, float farClip, float aspectRatio, float upDegree){
+void DrawViewVolume(glm::vec3 helicopterPos, glm::vec3 lookAtPos, float fov, float nearClip, float farClip, float aspectRatio, float upDegree){
     // float fov = CLIP_DEGREE;  // 視野角度
     // float nearClip = NEAR_CLIP;  // 近裁剪面
     // float farClip = FAR_CLIP;  // 遠裁剪面
@@ -956,20 +907,20 @@ void DrawViewVolume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, fl
     float farWidth = farHeight * aspectRatio;
 
     // 利用相機位置和觀察點位置計算近裁剪面的中心點
-    // Eigen::Vector3f helicopterPos(helicopterX, helicopterY, helicopterZ);
-    // Eigen::Vector3f lookAtPos(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f viewDir = (lookAtPos - helicopterPos).normalized();
-    Eigen::Vector3f nearClipCenter = lookAtPos - nearClip * viewDir,
+    // glm::vec3 helicopterPos(helicopterX, helicopterY, helicopterZ);
+    // glm::vec3 lookAtPos(lookAtX, lookAtY, lookAtZ);
+    glm::vec3 viewDir = glm::normalize(lookAtPos - helicopterPos);
+    glm::vec3 nearClipCenter = lookAtPos - nearClip * viewDir,
         farClipCenter = lookAtPos - farClip * viewDir;
 
-    Eigen::Vector3f nearCilpTopRight, nearClipTopLeft, nearClipBottomRight, nearClipBottomLeft;
-    Eigen::Vector3f farCilpTopRight, farClipTopLeft, farClipBottomRight, farClipBottomLeft;
-    Eigen::Vector3f lr(viewDir.z(), 0, -viewDir.x());
-    Eigen::Vector3f ud = lr.cross(viewDir);
-    ud = ud / ud.norm();
-    lr = lr / lr.norm();
-    Eigen::Vector3f rud = RotateUp(viewDir, ud, upDegree);
-    Eigen::Vector3f rlr = RotateUp(viewDir, lr, upDegree);
+    glm::vec3 nearCilpTopRight, nearClipTopLeft, nearClipBottomRight, nearClipBottomLeft;
+    glm::vec3 farCilpTopRight, farClipTopLeft, farClipBottomRight, farClipBottomLeft;
+    glm::vec3 lr(viewDir.z, 0, -viewDir.x);
+    glm::vec3 ud = glm::cross(lr, viewDir);
+    ud = ud / glm::normalize(ud);
+    lr = lr / glm::normalize(lr);
+    glm::vec3 rud = RotateUp(viewDir, ud, upDegree);
+    glm::vec3 rlr = RotateUp(viewDir, lr, upDegree);
     nearCilpTopRight = nearClipCenter + nearWidth * rlr + nearHeight * rud;
     nearClipTopLeft = nearClipCenter - nearWidth * rlr + nearHeight * rud;
     nearClipBottomRight = nearClipCenter + nearWidth * rlr - nearHeight * rud;
@@ -982,26 +933,26 @@ void DrawViewVolume(Eigen::Vector3f helicopterPos, Eigen::Vector3f lookAtPos, fl
 
     glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_LINE_LOOP);
-    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
-    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
-    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
-    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
+    glVertex3f(nearClipTopLeft.x, nearClipTopLeft.y, nearClipTopLeft.z);
+    glVertex3f(nearCilpTopRight.x, nearCilpTopRight.y, nearCilpTopRight.z);
+    glVertex3f(nearClipBottomRight.x, nearClipBottomRight.y, nearClipBottomRight.z);
+    glVertex3f(nearClipBottomLeft.x, nearClipBottomLeft.y, nearClipBottomLeft.z);
     glEnd();
     glBegin(GL_LINES);
-    glVertex3f(nearClipTopLeft.x(), nearClipTopLeft.y(), nearClipTopLeft.z());
-    glVertex3f(farClipTopLeft.x(), farClipTopLeft.y(), farClipTopLeft.z());
-    glVertex3f(nearCilpTopRight.x(), nearCilpTopRight.y(), nearCilpTopRight.z());
-    glVertex3f(farCilpTopRight.x(), farCilpTopRight.y(), farCilpTopRight.z());
-    glVertex3f(nearClipBottomRight.x(), nearClipBottomRight.y(), nearClipBottomRight.z());
-    glVertex3f(farClipBottomRight.x(), farClipBottomRight.y(), farClipBottomRight.z());
-    glVertex3f(nearClipBottomLeft.x(), nearClipBottomLeft.y(), nearClipBottomLeft.z());
-    glVertex3f(farClipBottomLeft.x(), farClipBottomLeft.y(), farClipBottomLeft.z());
+    glVertex3f(nearClipTopLeft.x, nearClipTopLeft.y, nearClipTopLeft.z);
+    glVertex3f(farClipTopLeft.x, farClipTopLeft.y, farClipTopLeft.z);
+    glVertex3f(nearCilpTopRight.x, nearCilpTopRight.y, nearCilpTopRight.z);
+    glVertex3f(farCilpTopRight.x, farCilpTopRight.y, farCilpTopRight.z);
+    glVertex3f(nearClipBottomRight.x, nearClipBottomRight.y, nearClipBottomRight.z);
+    glVertex3f(farClipBottomRight.x, farClipBottomRight.y, farClipBottomRight.z);
+    glVertex3f(nearClipBottomLeft.x, nearClipBottomLeft.y, nearClipBottomLeft.z);
+    glVertex3f(farClipBottomLeft.x, farClipBottomLeft.y, farClipBottomLeft.z);
     glEnd();
 }
 
-void DrawView(Eigen::Vector3f helicopterLocation, float u[3][3]){
+void DrawView(glm::vec3 helicopterLocation, float u[3][3]){
     int    i;
-    float  x = helicopterLocation.x() + 10, y = helicopterLocation.y(), z = helicopterLocation.z();
+    float  x = helicopterLocation.x + 10, y = helicopterLocation.y, z = helicopterLocation.z;
     glMatrixMode(GL_MODELVIEW);
     /*----Draw Eye position-----*/
     glPushMatrix();
@@ -1030,10 +981,10 @@ void DrawView(Eigen::Vector3f helicopterLocation, float u[3][3]){
     glEnd();
 }
 
-void DrawFog(Eigen::Vector3f color){
+void DrawFog(glm::vec3 color){
     // float fog_color[] = { 0.15, 0.20, 0.20, 0.50 };
     color /= 4;
-    float fog_color[4] = { color.x(), color.y(), color.z(), 1.0 };
+    float fog_color[4] = { color.x, color.y, color.z, 1.0 };
     glFogi(GL_FOG_MODE, GL_LINEAR);  /*fog factor=GL_LINEAR,GL_EXP,or GL_EXP2*/
     glFogf(GL_FOG_DENSITY, 0.15);    /*fog opacity(density)= 0.25*/
     glFogf(GL_FOG_START, 1.0);       /*Setup two ends for GL_LINEAR*/
@@ -1070,55 +1021,15 @@ void DrawFloor(int len){
         }
 }
 
-void DrawSkyBox(Eigen::Vector3f loc){
-    float x = loc.x();
-    float y = loc.y();
-    float z = loc.z();
+void DrawSkyBox(glm::vec3 loc){
+    float x = loc.x;
+    float y = loc.y;
+    float z = loc.z;
 
     glPushMatrix();
     glTranslatef(x - 375, y - 200, z - 375);
     SkyBox();
     glPopMatrix();
-}
-
-Eigen::Vector3f MoveCameraUD(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
-    // Eigen::Vector3f O(helicopterX, helicopterY, helicopterZ);
-    // Eigen::Vector3f P(lookAtX, lookAtY, lookAtZ);
-    Eigen::Vector3f result = RotateMatrix(O, P, degree);
-    Eigen::Transpose<Eigen::Vector3f> loc = result.transpose();
-
-    Eigen::Vector3f tresult = result - O;
-    Eigen::Vector3f tv = Eigen::Vector3f(0, 1, 0);
-    float cos_theta = tresult.dot(tv) / (tresult.norm() * tv.norm());
-    float angle = acos(cos_theta) * 180.0 / PI;
-
-    if(angle < ESP || 180.0f - angle < ESP) return P;
-    else return result;
-}
-
-Eigen::Vector3f MoveCameraLR(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
-    //旋轉中心
-    float center_x = O.x(),
-        center_z = O.z();
-    //移回中心
-    float tox = P.x() - center_x,
-        toz = P.z() - center_z;
-
-    degree = degree * PI / 180.0f;
-    //旋轉
-    float tx = tox * cos(degree) - toz * sin(degree),
-        tz = tox * sin(degree) + toz * cos(degree);
-    //移回
-    return Eigen::Vector3f(tx + center_x, P.y(), tz + center_z);
-}
-
-Eigen::Vector3f UpVector(Eigen::Vector3f O, Eigen::Vector3f P, float degree){
-    Eigen::Vector3f l = P - O;
-    Eigen::Vector3f v(l.z(), 0, -l.x());
-    l = l / l.norm();
-    v = v / v.norm();
-    Eigen::Vector3f result = RotateUp(l, v, degree);
-    return result;
 }
 
 // */
